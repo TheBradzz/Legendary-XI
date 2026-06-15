@@ -70,7 +70,8 @@ header{
   line-height:1;color:var(--lime);
   transition:color 0.3s;
 }
-#score-num.hit{color:var(--wrong)}
+#score-num.hit{color:#fff;text-shadow:0 0 20px var(--lime);}
+@keyframes scoreUp{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
 #score-lbl{font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;font-weight:700;margin-top:1px}
 #score-meta{flex:1;min-width:0}
 #ptitle{font-family:var(--fh);font-weight:700;font-size:1rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -82,6 +83,14 @@ header{
 #prog-track{height:4px;background:rgba(255,255,255,0.1);overflow:hidden}
 #prog-fill{height:100%;background:var(--lime);border-radius:0;width:0%;transition:width 0.5s cubic-bezier(.22,.68,0,1.2)}
 
+/* Challenge banner */
+#challenge-banner{
+  display:none;margin:4px 10px 2px;
+  background:rgba(255,180,0,0.12);border:1.5px solid rgba(255,180,0,0.35);
+  border-radius:10px;padding:8px 12px;text-align:center;
+}
+#challenge-banner .cb-name{font-family:var(--fh);font-size:0.88rem;font-weight:800;color:rgba(255,210,80,0.95);line-height:1.3}
+#challenge-banner .cb-score{font-size:0.65rem;color:rgba(255,255,255,0.55);margin-top:2px}
 /* Pitch fills 100% of #app width — no padding on pitch-wrap */
 #pitch-wrap{padding:3px 0 2px;display:flex;justify-content:center}
 #pitch{
@@ -205,35 +214,23 @@ header{
 }
 #gobtn:active{background:var(--lime2)}
 
-/* Bottom row: selected player info */
-#sel-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:7px 12px;
-  border-top:1px solid rgba(255,255,255,0.08);
-  min-height:36px;
-}
-#sel-left{flex:1;min-width:0}
-#sel-info{font-family:var(--fh);font-size:1.05rem;font-weight:800;color:var(--white);line-height:1.2}
-#sel-info span{color:var(--lime);}
-#sel-sub{font-size:0.7rem;color:rgba(255,255,255,0.65);font-weight:500;margin-top:2px}
-#sel-right{flex-shrink:0;margin-left:8px}
-#sel-prompt{font-size:0.7rem;color:var(--muted);font-style:italic;text-align:right}
+/* reveal-one is now in the hint bar */
 #reveal-one-btn{
-  display:none;
-  background:rgba(255,180,0,0.12);
+  flex:1;
+  background:rgba(255,180,0,0.1);
   border:1px solid rgba(255,180,0,0.3);
-  border-radius:8px;
+  border-radius:10px;
   color:rgba(255,210,80,0.95);
   font-family:var(--fb);
-  font-size:0.72rem;
-  font-weight:700;
-  padding:5px 10px;
+  font-size:0.78rem;
+  font-weight:600;
+  padding:8px 6px;
   cursor:pointer;
-  white-space:nowrap;
+  text-align:center;
+  line-height:1.3;
 }
 #reveal-one-btn:active{background:rgba(255,180,0,0.22)}
+#reveal-one-btn:disabled{opacity:0.3;cursor:not-allowed}
 
 /* ── HINT BUTTONS — two equal columns ── */
 #hint-bar{padding:3px 10px 2px;display:flex;gap:7px}
@@ -253,27 +250,25 @@ header{
 }
 .hbtn:active{background:rgba(255,255,255,0.14)}
 .hbtn:disabled{opacity:0.3;cursor:not-allowed}
-.hbtn .cost{display:block;font-size:0.62rem;color:var(--wrong);font-weight:700;margin-top:2px}
-/* Reveal all — full width below hints */
-#reveal-btn{
-  display:block;
-  width:calc(100% - 20px);
-  margin:4px 10px 4px;
-  background:rgba(255,80,80,0.1);
-  border:1px solid rgba(255,80,80,0.35);
-  border-radius:10px;
-  color:rgba(255,180,180,0.95);
-  font-family:var(--fb);
-  font-size:0.8rem;
-  font-weight:600;
-  padding:8px 6px;
-  cursor:pointer;
-  text-align:center;
-}
-#reveal-btn:active{background:rgba(255,80,80,0.22)}
+.hbtn .cost{display:block;font-size:0.64rem;color:var(--wrong);font-weight:700;margin-top:2px}
+
 #wrong-count{font-size:0.7rem;color:var(--muted);font-weight:500;text-align:center;padding:2px 10px 4px;display:block}
 
 /* ── TOAST ── */
+#score-flash{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-family:var(--fh);font-size:4.5rem;font-weight:800;
+  color:var(--lime);
+  text-shadow:0 0 40px rgba(181,255,77,0.8),0 2px 20px rgba(0,0,0,0.9);
+  pointer-events:none;z-index:200;opacity:0;
+}
+@keyframes scoreFlash{
+  0%  {opacity:0;transform:translate(-50%,-50%) scale(0.5);}
+  25% {opacity:1;transform:translate(-50%,-55%) scale(1.2);}
+  65% {opacity:1;transform:translate(-50%,-62%) scale(1.0);}
+  100%{opacity:0;transform:translate(-50%,-75%) scale(0.85);}
+}
 #toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--white);color:var(--navy);font-family:var(--fh);font-weight:700;font-size:0.95rem;padding:8px 18px;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,0.35);transition:transform 0.3s cubic-bezier(.22,.68,0,1.2);z-index:100;white-space:nowrap;pointer-events:none}
 #toast.show{transform:translateX(-50%) translateY(0)}
 #toast.ok{background:var(--lime);color:#0a1a08}
@@ -311,6 +306,8 @@ header{
 .wbtn-share:active{background:rgba(255,255,255,0.18)}
 .wbtn-lb{background:rgba(255,180,0,0.12);color:rgba(255,210,80,0.95);border:1px solid rgba(255,180,0,0.3)}
 .wbtn-lb:active{background:rgba(255,180,0,0.22)}
+.wbtn-challenge{background:rgba(255,80,200,0.12);color:rgba(255,150,220,0.95);border:1px solid rgba(255,80,200,0.3)}
+.wbtn-challenge:active{background:rgba(255,80,200,0.22)}
 .wbtn-play{background:var(--lime);color:#0a1a08}
 .wbtn-play:active{background:var(--lime2)}
 .wbtn-submit{background:var(--lime);color:#0a1a08;border:none;border-radius:8px;padding:8px 14px;font-family:var(--fh);font-weight:800;font-size:0.88rem;cursor:pointer;white-space:nowrap;flex-shrink:0}
@@ -363,6 +360,8 @@ header{
 #picker-tagline{font-size:0.7rem;color:var(--muted);margin-top:2px}
 #picker-random{background:var(--lime);color:#0a1a08;border:none;border-radius:10px;padding:8px 14px;font-family:var(--fh);font-weight:800;font-size:0.88rem;cursor:pointer;white-space:nowrap}
 #picker-random:active{background:var(--lime2)}
+#picker-share{background:rgba(255,255,255,0.08);color:var(--white);border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:8px 12px;font-family:var(--fh);font-weight:700;font-size:0.82rem;cursor:pointer}
+#picker-share:active{background:rgba(255,255,255,0.16)}
 #picker-scroll{flex:1;overflow-y:auto;padding:10px 12px 20px;min-height:200px}
 .picker-group{margin-bottom:18px}
 .picker-group-title{font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:2px}
@@ -383,11 +382,15 @@ header{
       <div id="picker-logo">Lineup<span>Legends</span></div>
       <div id="picker-tagline">Choose a lineup to guess</div>
     </div>
-    <button id="picker-random">🎲 Random</button>
+    <div style="display:flex;gap:8px">
+      <button id="picker-share">📤 Share</button>
+      <button id="picker-random">🎲 Random</button>
+    </div>
   </div>
   <div id="picker-scroll"></div>
 </div>
 
+<div id="score-flash"></div>
 <div id="app">
   <header>
     <div class="logo">Lineup<span>Legends</span></div>
@@ -407,31 +410,25 @@ header{
   <div id="prog-wrap">
     <div id="prog-track"><div id="prog-fill"></div></div>
   </div>
+  <div id="challenge-banner">
+    <div class="cb-name" id="cb-name"></div>
+    <div class="cb-score" id="cb-score"></div>
+  </div>
   <div id="pitch-wrap">
     <div id="pitch"><div id="pitch-bg"></div></div>
   </div>
   <div id="action-box">
     <div id="input-row">
-      <input id="guess-input" type="text" placeholder="Type surname and press GO…"
+      <input id="guess-input" type="text" placeholder="Type a surname…"
         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <button id="gobtn">GO</button>
     </div>
-    <div id="sel-row">
-      <div id="sel-left">
-        <div id="sel-info"><span id="sel-pos">—</span>&nbsp;<span id="sel-count"></span></div>
-        <div id="sel-sub"></div>
-      </div>
-      <div id="sel-right">
-        <button id="reveal-one-btn">Reveal this player</button>
-        <div id="sel-prompt">Tap a player ↑</div>
-      </div>
-    </div>
   </div>
   <div id="hint-bar">
-    <button class="hbtn" id="btn-nat" disabled>🌍 Nationality<span class="cost">−40 pts</span></button>
-    <button class="hbtn" id="btn-init" disabled>🔤 Next Letter<span class="cost">−30 pts</span></button>
+    <button class="hbtn" id="btn-nat" disabled>🌍 Reveal Nationality<span class="cost">−40 pts</span></button>
+    <button class="hbtn" id="btn-init" disabled>🔤 Show 1st Letter<span class="cost">−30 pts</span></button>
+    <button id="reveal-one-btn" disabled>👁 Reveal Player<span class="cost">−150 pts</span></button>
   </div>
-  <button id="reveal-btn">👁 Reveal All Names (score resets to 0)</button>
   <span id="wrong-count"></span>
 </div>
 
@@ -464,7 +461,7 @@ header{
     </div>
     <div id="wsubmit-msg"></div>
     <div class="wbtns">
-      <button class="wbtn wbtn-share" id="share-btn">📋 Copy</button>
+      <button class="wbtn wbtn-challenge" id="challenge-btn">⚔️ Challenge</button>
       <button class="wbtn wbtn-lb" id="view-lb-btn">🏅 Board</button>
       <button class="wbtn wbtn-play" id="again-btn">▶ Play</button>
     </div>
@@ -480,8 +477,8 @@ header{
     </div>
     <!-- Mode tabs: Overall vs Per Lineup -->
     <div id="lb-mode-tabs">
-      <button class="lb-mode-tab active" id="tab-overall">🌍 Overall</button>
-      <button class="lb-mode-tab" id="tab-lineup">⚽ By Lineup</button>
+      <button class="lb-mode-tab active" id="tab-lineup">⚽ By Lineup</button>
+      <button class="lb-mode-tab" id="tab-overall">🌍 Overall</button>
     </div>
     <!-- Lineup filter tabs (hidden in overall mode) -->
     <div id="lb-tabs"></div>
@@ -492,7 +489,85 @@ header{
 <div id="toast"></div>
 
 <script>
-const PUZZLES=[{"id":1,"team":"Leeds United","competition":"Champions League","match":"Champions League Semi Final vs Valencia (1st Leg)","formation":"442","year":2001,"players":[{"pos":"GK","name":"Nigel Martyn","nat":"England","club":"Leeds United"},{"pos":"RB","name":"Danny Mills","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Rio Ferdinand","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Dominic Matteo","nat":"Scotland","club":"Leeds United"},{"pos":"LB","name":"Ian Harte","nat":"Republic of Ireland","club":"Leeds United"},{"pos":"RM","name":"Lee Bowyer","nat":"England","club":"Leeds United"},{"pos":"CM","name":"David Batty","nat":"England","club":"Leeds United"},{"pos":"CM","name":"Olivier Dacourt","nat":"France","club":"Leeds United"},{"pos":"LM","name":"Harry Kewell","nat":"Australia","club":"Leeds United"},{"pos":"ST","name":"Alan Smith","nat":"England","club":"Leeds United"},{"pos":"ST","name":"Mark Viduka","nat":"Australia","club":"Leeds United"}]},{"id":2,"team":"England","competition":"European Championship","match":"UEFA Euro 2020 Final vs Italy","formation":"343","year":2021,"players":[{"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},{"pos":"CB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Harry Maguire","nat":"England","club":"Manchester United"},{"pos":"RWB","name":"Kieran Trippier","nat":"England","club":"Atletico Madrid"},{"pos":"CM","name":"Declan Rice","nat":"England","club":"West Ham United"},{"pos":"CM","name":"Kalvin Phillips","nat":"England","club":"Leeds United"},{"pos":"LWB","name":"Luke Shaw","nat":"England","club":"Manchester United"},{"pos":"RF","name":"Mason Mount","nat":"England","club":"Chelsea"},{"pos":"LF","name":"Raheem Sterling","nat":"England","club":"Manchester City"},{"pos":"ST","name":"Harry Kane","nat":"England","club":"Tottenham Hotspur"}]},{"id":3,"team":"England","competition":"World Cup","match":"FIFA World Cup Quarter Final vs France","formation":"433","year":2022,"players":[{"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},{"pos":"RB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Harry Maguire","nat":"England","club":"Manchester United"},{"pos":"LB","name":"Luke Shaw","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Jordan Henderson","nat":"England","club":"Liverpool"},{"pos":"CM","name":"Declan Rice","nat":"England","club":"West Ham United"},{"pos":"CM","name":"Jude Bellingham","nat":"England","club":"Borussia Dortmund"},{"pos":"RW","name":"Bukayo Saka","nat":"England","club":"Arsenal"},{"pos":"ST","name":"Harry Kane","nat":"England","club":"Tottenham Hotspur"},{"pos":"LW","name":"Phil Foden","nat":"England","club":"Manchester City"}]},{"id":4,"team":"England","competition":"European Championship","match":"UEFA Euro 2024 Final vs Spain","formation":"4231","year":2024,"players":[{"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},{"pos":"RB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Marc Guehi","nat":"England","club":"Crystal Palace"},{"pos":"LB","name":"Luke Shaw","nat":"England","club":"Manchester United"},{"pos":"DM","name":"Kobbie Mainoo","nat":"England","club":"Manchester United"},{"pos":"DM","name":"Declan Rice","nat":"England","club":"Arsenal"},{"pos":"RW","name":"Bukayo Saka","nat":"England","club":"Arsenal"},{"pos":"AM","name":"Jude Bellingham","nat":"England","club":"Real Madrid"},{"pos":"LW","name":"Phil Foden","nat":"England","club":"Manchester City"},{"pos":"ST","name":"Harry Kane","nat":"England","club":"Bayern Munich"}]},{"id":5,"team":"England","competition":"European Championship","match":"UEFA Euro 1996 Semi Final vs Germany","formation":"352","year":1996,"players":[{"pos":"GK","name":"David Seaman","nat":"England","club":"Arsenal"},{"pos":"CB","name":"Gareth Southgate","nat":"England","club":"Aston Villa"},{"pos":"CB","name":"Tony Adams","nat":"England","club":"Arsenal"},{"pos":"CB","name":"Stuart Pearce","nat":"England","club":"Nottingham Forest"},{"pos":"RWB","name":"Gary Neville","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Paul Ince","nat":"England","club":"Inter Milan"},{"pos":"CM","name":"Paul Gascoigne","nat":"England","club":"Rangers"},{"pos":"CM","name":"David Platt","nat":"England","club":"Arsenal"},{"pos":"LWB","name":"Darren Anderton","nat":"England","club":"Tottenham Hotspur"},{"pos":"ST","name":"Alan Shearer","nat":"England","club":"Blackburn Rovers"},{"pos":"ST","name":"Teddy Sheringham","nat":"England","club":"Tottenham Hotspur"}]},{"id":6,"team":"Liverpool","competition":"Champions League","match":"UEFA Champions League Final vs AC Milan","formation":"4411","year":2005,"players":[{"pos":"GK","name":"Jerzy Dudek","nat":"Poland","club":"Liverpool"},{"pos":"RB","name":"Steve Finnan","nat":"Republic of Ireland","club":"Liverpool"},{"pos":"CB","name":"Jamie Carragher","nat":"England","club":"Liverpool"},{"pos":"CB","name":"Sami Hyypia","nat":"Finland","club":"Liverpool"},{"pos":"LB","name":"Djimi Traore","nat":"Mali","club":"Liverpool"},{"pos":"RM","name":"Luis Garcia","nat":"Spain","club":"Liverpool"},{"pos":"CM","name":"Steven Gerrard","nat":"England","club":"Liverpool"},{"pos":"CM","name":"Xabi Alonso","nat":"Spain","club":"Liverpool"},{"pos":"LM","name":"John Arne Riise","nat":"Norway","club":"Liverpool"},{"pos":"SS","name":"Harry Kewell","nat":"Australia","club":"Liverpool"},{"pos":"ST","name":"Milan Baros","nat":"Czech Republic","club":"Liverpool"}]},{"id":7,"team":"Arsenal","competition":"Premier League","match":"Premier League vs Leicester City (Invincible Season Finale)","formation":"442","year":2004,"players":[{"pos":"GK","name":"Jens Lehmann","nat":"Germany","club":"Arsenal"},{"pos":"RB","name":"Lauren","nat":"Cameroon","club":"Arsenal"},{"pos":"CB","name":"Kolo Toure","nat":"Ivory Coast","club":"Arsenal"},{"pos":"CB","name":"Sol Campbell","nat":"England","club":"Arsenal"},{"pos":"LB","name":"Ashley Cole","nat":"England","club":"Arsenal"},{"pos":"RM","name":"Fredrik Ljungberg","nat":"Sweden","club":"Arsenal"},{"pos":"CM","name":"Patrick Vieira","nat":"France","club":"Arsenal"},{"pos":"CM","name":"Gilberto Silva","nat":"Brazil","club":"Arsenal"},{"pos":"LM","name":"Robert Pires","nat":"France","club":"Arsenal"},{"pos":"ST","name":"Dennis Bergkamp","nat":"Netherlands","club":"Arsenal"},{"pos":"ST","name":"Thierry Henry","nat":"France","club":"Arsenal"}]},{"id":8,"team":"Leicester City","competition":"Premier League","match":"Premier League vs Manchester United (Title Decider)","formation":"4411","year":2016,"players":[{"pos":"GK","name":"Kasper Schmeichel","nat":"Denmark","club":"Leicester City"},{"pos":"RB","name":"Danny Simpson","nat":"England","club":"Leicester City"},{"pos":"CB","name":"Wes Morgan","nat":"Jamaica","club":"Leicester City"},{"pos":"CB","name":"Robert Huth","nat":"Germany","club":"Leicester City"},{"pos":"LB","name":"Christian Fuchs","nat":"Austria","club":"Leicester City"},{"pos":"RM","name":"Riyad Mahrez","nat":"Algeria","club":"Leicester City"},{"pos":"CM","name":"Danny Drinkwater","nat":"England","club":"Leicester City"},{"pos":"CM","name":"N'Golo Kante","nat":"France","club":"Leicester City"},{"pos":"LM","name":"Jeffrey Schlupp","nat":"Ghana","club":"Leicester City"},{"pos":"SS","name":"Shinji Okazaki","nat":"Japan","club":"Leicester City"},{"pos":"ST","name":"Jamie Vardy","nat":"England","club":"Leicester City"}]},{"id":9,"team":"Manchester City","competition":"Premier League","match":"Premier League vs Queens Park Rangers (Title Winner)","formation":"442","year":2012,"players":[{"pos":"GK","name":"Joe Hart","nat":"England","club":"Manchester City"},{"pos":"RB","name":"Pablo Zabaleta","nat":"Argentina","club":"Manchester City"},{"pos":"CB","name":"Joleon Lescott","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Vincent Kompany","nat":"Belgium","club":"Manchester City"},{"pos":"LB","name":"Gael Clichy","nat":"France","club":"Manchester City"},{"pos":"RM","name":"David Silva","nat":"Spain","club":"Manchester City"},{"pos":"CM","name":"Yaya Toure","nat":"Ivory Coast","club":"Manchester City"},{"pos":"CM","name":"Gareth Barry","nat":"England","club":"Manchester City"},{"pos":"LM","name":"Samir Nasri","nat":"France","club":"Manchester City"},{"pos":"ST","name":"Carlos Tevez","nat":"Argentina","club":"Manchester City"},{"pos":"ST","name":"Sergio Aguero","nat":"Argentina","club":"Manchester City"}]},{"id":10,"team":"Chelsea","competition":"Champions League","match":"UEFA Champions League Final vs Bayern Munich","formation":"4231","year":2012,"players":[{"pos":"GK","name":"Petr Cech","nat":"Czech Republic","club":"Chelsea"},{"pos":"RB","name":"Jose Bosingwa","nat":"Portugal","club":"Chelsea"},{"pos":"CB","name":"Gary Cahill","nat":"England","club":"Chelsea"},{"pos":"CB","name":"David Luiz","nat":"Brazil","club":"Chelsea"},{"pos":"LB","name":"Ashley Cole","nat":"England","club":"Chelsea"},{"pos":"DM","name":"John Obi Mikel","nat":"Nigeria","club":"Chelsea"},{"pos":"DM","name":"Frank Lampard","nat":"England","club":"Chelsea"},{"pos":"RW","name":"Salomon Kalou","nat":"Ivory Coast","club":"Chelsea"},{"pos":"AM","name":"Ryan Bertrand","nat":"England","club":"Chelsea"},{"pos":"LW","name":"Juan Mata","nat":"Spain","club":"Chelsea"},{"pos":"ST","name":"Didier Drogba","nat":"Ivory Coast","club":"Chelsea"}]},{"id":11,"team":"Manchester United","competition":"Champions League","match":"UEFA Champions League Final vs Bayern Munich","formation":"442","year":1999,"players":[{"pos":"GK","name":"Peter Schmeichel","nat":"Denmark","club":"Manchester United"},{"pos":"RB","name":"Gary Neville","nat":"England","club":"Manchester United"},{"pos":"CB","name":"Jaap Stam","nat":"Netherlands","club":"Manchester United"},{"pos":"CB","name":"Ronny Johnsen","nat":"Norway","club":"Manchester United"},{"pos":"LB","name":"Jesper Blomqvist","nat":"Sweden","club":"Manchester United"},{"pos":"RM","name":"David Beckham","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Nicky Butt","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Ryan Giggs","nat":"Wales","club":"Manchester United"},{"pos":"LM","name":"Andy Cole","nat":"England","club":"Manchester United"},{"pos":"ST","name":"Dwight Yorke","nat":"Trinidad and Tobago","club":"Manchester United"},{"pos":"ST","name":"Teddy Sheringham","nat":"England","club":"Manchester United"}]},{"id":12,"team":"Manchester City","competition":"Premier League","match":"Premier League vs Southampton (100 Point Season)","formation":"433","year":2018,"players":[{"pos":"GK","name":"Ederson","nat":"Brazil","club":"Manchester City"},{"pos":"RB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Vincent Kompany","nat":"Belgium","club":"Manchester City"},{"pos":"CB","name":"Aymeric Laporte","nat":"France","club":"Manchester City"},{"pos":"LB","name":"Fabian Delph","nat":"England","club":"Manchester City"},{"pos":"CM","name":"Fernandinho","nat":"Brazil","club":"Manchester City"},{"pos":"CM","name":"David Silva","nat":"Spain","club":"Manchester City"},{"pos":"CM","name":"Kevin De Bruyne","nat":"Belgium","club":"Manchester City"},{"pos":"RW","name":"Raheem Sterling","nat":"England","club":"Manchester City"},{"pos":"ST","name":"Gabriel Jesus","nat":"Brazil","club":"Manchester City"},{"pos":"LW","name":"Leroy Sane","nat":"Germany","club":"Manchester City"}]},{"id":13,"team":"Barcelona","competition":"Champions League","match":"UEFA Champions League Final vs Manchester United","formation":"433","year":2009,"players":[{"pos":"GK","name":"Victor Valdes","nat":"Spain","club":"Barcelona"},{"pos":"RB","name":"Dani Alves","nat":"Brazil","club":"Barcelona"},{"pos":"CB","name":"Gerard Pique","nat":"Spain","club":"Barcelona"},{"pos":"CB","name":"Yaya Toure","nat":"Ivory Coast","club":"Barcelona"},{"pos":"LB","name":"Sylvinho","nat":"Brazil","club":"Barcelona"},{"pos":"CM","name":"Xavi","nat":"Spain","club":"Barcelona"},{"pos":"CM","name":"Sergio Busquets","nat":"Spain","club":"Barcelona"},{"pos":"CM","name":"Andres Iniesta","nat":"Spain","club":"Barcelona"},{"pos":"RW","name":"Lionel Messi","nat":"Argentina","club":"Barcelona"},{"pos":"ST","name":"Samuel Etoo","nat":"Cameroon","club":"Barcelona"},{"pos":"LW","name":"Thierry Henry","nat":"France","club":"Barcelona"}]},{"id":14,"team":"Real Madrid","competition":"Champions League","match":"UEFA Champions League Final vs Bayer Leverkusen","formation":"4231","year":2002,"players":[{"pos":"GK","name":"Cesar Sanchez","nat":"Spain","club":"Real Madrid"},{"pos":"RB","name":"Michel Salgado","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Fernando Hierro","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Ivan Helguera","nat":"Spain","club":"Real Madrid"},{"pos":"LB","name":"Roberto Carlos","nat":"Brazil","club":"Real Madrid"},{"pos":"DM","name":"Claude Makelele","nat":"France","club":"Real Madrid"},{"pos":"CM","name":"Zinedine Zidane","nat":"France","club":"Real Madrid"},{"pos":"RW","name":"Luis Figo","nat":"Portugal","club":"Real Madrid"},{"pos":"AM","name":"Raul","nat":"Spain","club":"Real Madrid"},{"pos":"LW","name":"Santiago Solari","nat":"Argentina","club":"Real Madrid"},{"pos":"ST","name":"Fernando Morientes","nat":"Spain","club":"Real Madrid"}]},{"id":15,"team":"Real Madrid","competition":"La Liga","match":"El Clasico vs Barcelona (Galacticos Era)","formation":"4231","year":2004,"players":[{"pos":"GK","name":"Iker Casillas","nat":"Spain","club":"Real Madrid"},{"pos":"RB","name":"Michel Salgado","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Walter Samuel","nat":"Argentina","club":"Real Madrid"},{"pos":"CB","name":"Ivan Helguera","nat":"Spain","club":"Real Madrid"},{"pos":"LB","name":"Roberto Carlos","nat":"Brazil","club":"Real Madrid"},{"pos":"CM","name":"David Beckham","nat":"England","club":"Real Madrid"},{"pos":"CM","name":"Zinedine Zidane","nat":"France","club":"Real Madrid"},{"pos":"RW","name":"Luis Figo","nat":"Portugal","club":"Real Madrid"},{"pos":"AM","name":"Raul","nat":"Spain","club":"Real Madrid"},{"pos":"LW","name":"Santiago Solari","nat":"Argentina","club":"Real Madrid"},{"pos":"ST","name":"Ronaldo","nat":"Brazil","club":"Real Madrid"}]},{"id":16,"team":"France","competition":"World Cup","match":"FIFA World Cup Final vs Brazil","formation":"442","year":1998,"players":[{"pos":"GK","name":"Fabien Barthez","nat":"France","club":"Monaco"},{"pos":"RB","name":"Lilian Thuram","nat":"France","club":"Parma"},{"pos":"CB","name":"Marcel Desailly","nat":"France","club":"AC Milan"},{"pos":"CB","name":"Frank Leboeuf","nat":"France","club":"Chelsea"},{"pos":"LB","name":"Bixente Lizarazu","nat":"France","club":"Bayern Munich"},{"pos":"RM","name":"Christian Karembeu","nat":"France","club":"Real Madrid"},{"pos":"CM","name":"Didier Deschamps","nat":"France","club":"Juventus"},{"pos":"CM","name":"Emmanuel Petit","nat":"France","club":"Arsenal"},{"pos":"LM","name":"Zinedine Zidane","nat":"France","club":"Juventus"},{"pos":"ST","name":"Youri Djorkaeff","nat":"France","club":"Inter Milan"},{"pos":"ST","name":"Stephane Guivarc'h","nat":"France","club":"Auxerre"}]},{"id":17,"team":"Germany","competition":"World Cup","match":"FIFA World Cup Final vs Argentina","formation":"433","year":2014,"players":[{"pos":"GK","name":"Manuel Neuer","nat":"Germany","club":"Bayern Munich"},{"pos":"RB","name":"Philipp Lahm","nat":"Germany","club":"Bayern Munich"},{"pos":"CB","name":"Jerome Boateng","nat":"Germany","club":"Bayern Munich"},{"pos":"CB","name":"Mats Hummels","nat":"Germany","club":"Borussia Dortmund"},{"pos":"LB","name":"Benedikt Howedes","nat":"Germany","club":"Schalke"},{"pos":"CM","name":"Bastian Schweinsteiger","nat":"Germany","club":"Bayern Munich"},{"pos":"CM","name":"Toni Kroos","nat":"Germany","club":"Bayern Munich"},{"pos":"CM","name":"Christoph Kramer","nat":"Germany","club":"Borussia Monchengladbach"},{"pos":"RW","name":"Thomas Muller","nat":"Germany","club":"Bayern Munich"},{"pos":"ST","name":"Miroslav Klose","nat":"Germany","club":"Lazio"},{"pos":"LW","name":"Mesut Ozil","nat":"Germany","club":"Arsenal"}]},{"id":18,"team":"Spain","competition":"European Championship","match":"UEFA Euro 2008 Final vs Germany","formation":"4141","year":2008,"players":[{"pos":"GK","name":"Iker Casillas","nat":"Spain","club":"Real Madrid"},{"pos":"RB","name":"Sergio Ramos","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Carlos Puyol","nat":"Spain","club":"Barcelona"},{"pos":"CB","name":"Carlos Marchena","nat":"Spain","club":"Valencia"},{"pos":"LB","name":"Joan Capdevila","nat":"Spain","club":"Villarreal"},{"pos":"DM","name":"Marcos Senna","nat":"Spain","club":"Villarreal"},{"pos":"RM","name":"David Silva","nat":"Spain","club":"Valencia"},{"pos":"CM","name":"Cesc Fabregas","nat":"Spain","club":"Arsenal"},{"pos":"LM","name":"Andres Iniesta","nat":"Spain","club":"Barcelona"},{"pos":"AM","name":"Xavi","nat":"Spain","club":"Barcelona"},{"pos":"ST","name":"Fernando Torres","nat":"Spain","club":"Liverpool"}]},{"id":19,"team":"AC Milan","competition":"Champions League","match":"UEFA Champions League Final vs Juventus (pen)","formation":"442","year":2003,"players":[{"pos":"GK","name":"Dida","nat":"Brazil","club":"AC Milan"},{"pos":"RB","name":"Kakha Kaladze","nat":"Georgia","club":"AC Milan"},{"pos":"CB","name":"Alessandro Costacurta","nat":"Italy","club":"AC Milan"},{"pos":"CB","name":"Alessandro Nesta","nat":"Italy","club":"AC Milan"},{"pos":"LB","name":"Paolo Maldini","nat":"Italy","club":"AC Milan"},{"pos":"RM","name":"Clarence Seedorf","nat":"Netherlands","club":"AC Milan"},{"pos":"CM","name":"Andrea Pirlo","nat":"Italy","club":"AC Milan"},{"pos":"CM","name":"Gennaro Gattuso","nat":"Italy","club":"AC Milan"},{"pos":"LM","name":"Rui Costa","nat":"Portugal","club":"AC Milan"},{"pos":"ST","name":"Andriy Shevchenko","nat":"Ukraine","club":"AC Milan"},{"pos":"ST","name":"Filippo Inzaghi","nat":"Italy","club":"AC Milan"}]},{"id":20,"team":"Blackburn Rovers","competition":"Premier League","match":"Premier League Title Winners vs Liverpool (Final Day)","formation":"442","year":1995,"players":[{"pos":"GK","name":"Tim Flowers","nat":"England","club":"Blackburn Rovers"},{"pos":"RB","name":"Henning Berg","nat":"Norway","club":"Blackburn Rovers"},{"pos":"CB","name":"Colin Hendry","nat":"Scotland","club":"Blackburn Rovers"},{"pos":"CB","name":"Ian Pearce","nat":"England","club":"Blackburn Rovers"},{"pos":"LB","name":"Graeme Le Saux","nat":"England","club":"Blackburn Rovers"},{"pos":"RM","name":"Stuart Ripley","nat":"England","club":"Blackburn Rovers"},{"pos":"CM","name":"Tim Sherwood","nat":"England","club":"Blackburn Rovers"},{"pos":"CM","name":"David Batty","nat":"England","club":"Blackburn Rovers"},{"pos":"LM","name":"Jason Wilcox","nat":"England","club":"Blackburn Rovers"},{"pos":"ST","name":"Alan Shearer","nat":"England","club":"Blackburn Rovers"},{"pos":"ST","name":"Chris Sutton","nat":"England","club":"Blackburn Rovers"}]},{"id":21,"team":"Leeds United","competition":"First Division","match":"First Division Title Winners vs Sheffield United (Final Day)","formation":"442","year":1992,"players":[{"pos":"GK","name":"John Lukic","nat":"England","club":"Leeds United"},{"pos":"RB","name":"Mel Sterland","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Chris Fairclough","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Chris Whyte","nat":"England","club":"Leeds United"},{"pos":"LB","name":"Tony Dorigo","nat":"England","club":"Leeds United"},{"pos":"RM","name":"Gordon Strachan","nat":"Scotland","club":"Leeds United"},{"pos":"CM","name":"David Batty","nat":"England","club":"Leeds United"},{"pos":"CM","name":"Gary McAllister","nat":"Scotland","club":"Leeds United"},{"pos":"LM","name":"Gary Speed","nat":"Wales","club":"Leeds United"},{"pos":"ST","name":"Rod Wallace","nat":"England","club":"Leeds United"},{"pos":"ST","name":"Lee Chapman","nat":"England","club":"Leeds United"}]},{"id":22,"team":"Leeds United","competition":"Championship","match":"Championship Title Winners vs Charlton Athletic","formation":"433","year":2020,"players":[{"pos":"GK","name":"Illan Meslier","nat":"France","club":"Leeds United"},{"pos":"RB","name":"Luke Ayling","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Ben White","nat":"England","club":"Brighton"},{"pos":"CB","name":"Liam Cooper","nat":"Scotland","club":"Leeds United"},{"pos":"LB","name":"Stuart Dallas","nat":"Northern Ireland","club":"Leeds United"},{"pos":"CM","name":"Kalvin Phillips","nat":"England","club":"Leeds United"},{"pos":"CM","name":"Mateusz Klich","nat":"Poland","club":"Leeds United"},{"pos":"RW","name":"Helder Costa","nat":"Portugal","club":"Leeds United"},{"pos":"AM","name":"Pablo Hernandez","nat":"Spain","club":"Leeds United"},{"pos":"LW","name":"Jack Harrison","nat":"England","club":"Leeds United"},{"pos":"ST","name":"Patrick Bamford","nat":"England","club":"Leeds United"}]},{"id":23,"team":"Leeds United","competition":"Championship","match":"Championship Playoff Final vs Southampton at Wembley","formation":"4231","year":2024,"players":[{"pos":"GK","name":"Illan Meslier","nat":"France","club":"Leeds United"},{"pos":"RB","name":"Archie Gray","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Joe Rodon","nat":"Wales","club":"Leeds United"},{"pos":"CB","name":"Ethan Ampadu","nat":"Wales","club":"Leeds United"},{"pos":"LB","name":"Junior Firpo","nat":"Dominican Republic","club":"Leeds United"},{"pos":"DM","name":"Ilia Gruev","nat":"Bulgaria","club":"Leeds United"},{"pos":"DM","name":"Glen Kamara","nat":"Finland","club":"Leeds United"},{"pos":"RW","name":"Wilfried Gnonto","nat":"Italy","club":"Leeds United"},{"pos":"AM","name":"Georginio Rutter","nat":"France","club":"Leeds United"},{"pos":"LW","name":"Crysencio Summerville","nat":"Netherlands","club":"Leeds United"},{"pos":"ST","name":"Joel Piroe","nat":"Netherlands","club":"Leeds United"}]}];
+const PUZZLES=[{"id":1,"team":"Leeds United","competition":"Champions League","match":"Champions League Semi Final vs Valencia (1st Leg)","difficulty":5,"formation":"442","year":2001,"players":[{"pos":"GK","name":"Nigel Martyn","nat":"England","club":"Leeds United"},{"pos":"RB","name":"Danny Mills","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Rio Ferdinand","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Dominic Matteo","nat":"Scotland","club":"Leeds United"},{"pos":"LB","name":"Ian Harte","nat":"Republic of Ireland","club":"Leeds United"},{"pos":"RM","name":"Lee Bowyer","nat":"England","club":"Leeds United"},{"pos":"CM","name":"David Batty","nat":"England","club":"Leeds United"},{"pos":"CM","name":"Olivier Dacourt","nat":"France","club":"Leeds United"},{"pos":"LM","name":"Harry Kewell","nat":"Australia","club":"Leeds United"},{"pos":"ST","name":"Alan Smith","nat":"England","club":"Leeds United"},{"pos":"ST","name":"Mark Viduka","nat":"Australia","club":"Leeds United"}]},{"id":2,"team":"England","competition":"International","match":"UEFA Euro 2020 Final vs Italy","difficulty":1,"formation":"343","year":2021,"players":[{"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},{"pos":"CB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Harry Maguire","nat":"England","club":"Manchester United"},{"pos":"RWB","name":"Kieran Trippier","nat":"England","club":"Atletico Madrid"},{"pos":"CM","name":"Declan Rice","nat":"England","club":"West Ham United"},{"pos":"CM","name":"Kalvin Phillips","nat":"England","club":"Leeds United"},{"pos":"LWB","name":"Luke Shaw","nat":"England","club":"Manchester United"},{"pos":"RF","name":"Mason Mount","nat":"England","club":"Chelsea"},{"pos":"LF","name":"Raheem Sterling","nat":"England","club":"Manchester City"},{"pos":"ST","name":"Harry Kane","nat":"England","club":"Tottenham Hotspur"}]},{"id":3,"team":"England","competition":"International","match":"FIFA World Cup Quarter Final vs France","difficulty":2,"formation":"433","year":2022,"players":[{"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},{"pos":"RB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Harry Maguire","nat":"England","club":"Manchester United"},{"pos":"LB","name":"Luke Shaw","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Jordan Henderson","nat":"England","club":"Liverpool"},{"pos":"CM","name":"Declan Rice","nat":"England","club":"West Ham United"},{"pos":"CM","name":"Jude Bellingham","nat":"England","club":"Borussia Dortmund"},{"pos":"RW","name":"Bukayo Saka","nat":"England","club":"Arsenal"},{"pos":"ST","name":"Harry Kane","nat":"England","club":"Tottenham Hotspur"},{"pos":"LW","name":"Phil Foden","nat":"England","club":"Manchester City"}]},{"id":4,"team":"England","competition":"International","match":"UEFA Euro 2024 Final vs Spain","difficulty":2,"formation":"4231","year":2024,"players":[{"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},{"pos":"RB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Marc Guehi","nat":"England","club":"Crystal Palace"},{"pos":"LB","name":"Luke Shaw","nat":"England","club":"Manchester United"},{"pos":"DM","name":"Kobbie Mainoo","nat":"England","club":"Manchester United"},{"pos":"DM","name":"Declan Rice","nat":"England","club":"Arsenal"},{"pos":"RW","name":"Bukayo Saka","nat":"England","club":"Arsenal"},{"pos":"AM","name":"Jude Bellingham","nat":"England","club":"Real Madrid"},{"pos":"LW","name":"Phil Foden","nat":"England","club":"Manchester City"},{"pos":"ST","name":"Harry Kane","nat":"England","club":"Bayern Munich"}]},{"id":5,"team":"England","competition":"International","match":"UEFA Euro 1996 Semi Final vs Germany","difficulty":3,"formation":"352","year":1996,"players":[{"pos":"GK","name":"David Seaman","nat":"England","club":"Arsenal"},{"pos":"CB","name":"Gareth Southgate","nat":"England","club":"Aston Villa"},{"pos":"CB","name":"Tony Adams","nat":"England","club":"Arsenal"},{"pos":"CB","name":"Stuart Pearce","nat":"England","club":"Nottingham Forest"},{"pos":"RWB","name":"Gary Neville","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Paul Ince","nat":"England","club":"Inter Milan"},{"pos":"CM","name":"Paul Gascoigne","nat":"England","club":"Rangers"},{"pos":"CM","name":"David Platt","nat":"England","club":"Arsenal"},{"pos":"LWB","name":"Darren Anderton","nat":"England","club":"Tottenham Hotspur"},{"pos":"ST","name":"Alan Shearer","nat":"England","club":"Blackburn Rovers"},{"pos":"ST","name":"Teddy Sheringham","nat":"England","club":"Tottenham Hotspur"}]},{"id":6,"team":"Liverpool","competition":"Champions League","match":"UEFA Champions League Final vs AC Milan","difficulty":3,"formation":"4411","year":2005,"players":[{"pos":"GK","name":"Jerzy Dudek","nat":"Poland","club":"Liverpool"},{"pos":"RB","name":"Steve Finnan","nat":"Republic of Ireland","club":"Liverpool"},{"pos":"CB","name":"Jamie Carragher","nat":"England","club":"Liverpool"},{"pos":"CB","name":"Sami Hyypia","nat":"Finland","club":"Liverpool"},{"pos":"LB","name":"Djimi Traore","nat":"Mali","club":"Liverpool"},{"pos":"RM","name":"Luis Garcia","nat":"Spain","club":"Liverpool"},{"pos":"CM","name":"Steven Gerrard","nat":"England","club":"Liverpool"},{"pos":"CM","name":"Xabi Alonso","nat":"Spain","club":"Liverpool"},{"pos":"LM","name":"John Arne Riise","nat":"Norway","club":"Liverpool"},{"pos":"SS","name":"Harry Kewell","nat":"Australia","club":"Liverpool"},{"pos":"ST","name":"Milan Baros","nat":"Czech Republic","club":"Liverpool"}]},{"id":7,"team":"Arsenal","competition":"Premier League","match":"Premier League vs Leicester City (Invincible Season Finale)","difficulty":2,"formation":"442","year":2004,"players":[{"pos":"GK","name":"Jens Lehmann","nat":"Germany","club":"Arsenal"},{"pos":"RB","name":"Lauren","nat":"Cameroon","club":"Arsenal"},{"pos":"CB","name":"Kolo Toure","nat":"Ivory Coast","club":"Arsenal"},{"pos":"CB","name":"Sol Campbell","nat":"England","club":"Arsenal"},{"pos":"LB","name":"Ashley Cole","nat":"England","club":"Arsenal"},{"pos":"RM","name":"Fredrik Ljungberg","nat":"Sweden","club":"Arsenal"},{"pos":"CM","name":"Patrick Vieira","nat":"France","club":"Arsenal"},{"pos":"CM","name":"Gilberto Silva","nat":"Brazil","club":"Arsenal"},{"pos":"LM","name":"Robert Pires","nat":"France","club":"Arsenal"},{"pos":"ST","name":"Dennis Bergkamp","nat":"Netherlands","club":"Arsenal"},{"pos":"ST","name":"Thierry Henry","nat":"France","club":"Arsenal"}]},{"id":8,"team":"Leicester City","competition":"Premier League","match":"Premier League vs Manchester United (Title Decider)","difficulty":2,"formation":"4411","year":2016,"players":[{"pos":"GK","name":"Kasper Schmeichel","nat":"Denmark","club":"Leicester City"},{"pos":"RB","name":"Danny Simpson","nat":"England","club":"Leicester City"},{"pos":"CB","name":"Wes Morgan","nat":"Jamaica","club":"Leicester City"},{"pos":"CB","name":"Robert Huth","nat":"Germany","club":"Leicester City"},{"pos":"LB","name":"Christian Fuchs","nat":"Austria","club":"Leicester City"},{"pos":"RM","name":"Riyad Mahrez","nat":"Algeria","club":"Leicester City"},{"pos":"CM","name":"Danny Drinkwater","nat":"England","club":"Leicester City"},{"pos":"CM","name":"N'Golo Kante","nat":"France","club":"Leicester City"},{"pos":"LM","name":"Jeffrey Schlupp","nat":"Ghana","club":"Leicester City"},{"pos":"SS","name":"Shinji Okazaki","nat":"Japan","club":"Leicester City"},{"pos":"ST","name":"Jamie Vardy","nat":"England","club":"Leicester City"}]},{"id":9,"team":"Manchester City","competition":"Premier League","match":"Premier League vs Queens Park Rangers (Title Winner)","difficulty":2,"formation":"442","year":2012,"players":[{"pos":"GK","name":"Joe Hart","nat":"England","club":"Manchester City"},{"pos":"RB","name":"Pablo Zabaleta","nat":"Argentina","club":"Manchester City"},{"pos":"CB","name":"Joleon Lescott","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Vincent Kompany","nat":"Belgium","club":"Manchester City"},{"pos":"LB","name":"Gael Clichy","nat":"France","club":"Manchester City"},{"pos":"RM","name":"David Silva","nat":"Spain","club":"Manchester City"},{"pos":"CM","name":"Yaya Toure","nat":"Ivory Coast","club":"Manchester City"},{"pos":"CM","name":"Gareth Barry","nat":"England","club":"Manchester City"},{"pos":"LM","name":"Samir Nasri","nat":"France","club":"Manchester City"},{"pos":"ST","name":"Carlos Tevez","nat":"Argentina","club":"Manchester City"},{"pos":"ST","name":"Sergio Aguero","nat":"Argentina","club":"Manchester City"}]},{"id":10,"team":"Chelsea","competition":"Champions League","match":"UEFA Champions League Final vs Bayern Munich","difficulty":3,"formation":"4231","year":2012,"players":[{"pos":"GK","name":"Petr Cech","nat":"Czech Republic","club":"Chelsea"},{"pos":"RB","name":"Jose Bosingwa","nat":"Portugal","club":"Chelsea"},{"pos":"CB","name":"Gary Cahill","nat":"England","club":"Chelsea"},{"pos":"CB","name":"David Luiz","nat":"Brazil","club":"Chelsea"},{"pos":"LB","name":"Ashley Cole","nat":"England","club":"Chelsea"},{"pos":"DM","name":"John Obi Mikel","nat":"Nigeria","club":"Chelsea"},{"pos":"DM","name":"Frank Lampard","nat":"England","club":"Chelsea"},{"pos":"RW","name":"Salomon Kalou","nat":"Ivory Coast","club":"Chelsea"},{"pos":"AM","name":"Ryan Bertrand","nat":"England","club":"Chelsea"},{"pos":"LW","name":"Juan Mata","nat":"Spain","club":"Chelsea"},{"pos":"ST","name":"Didier Drogba","nat":"Ivory Coast","club":"Chelsea"}]},{"id":11,"team":"Manchester United","competition":"Champions League","match":"UEFA Champions League Final vs Bayern Munich","difficulty":3,"formation":"442","year":1999,"players":[{"pos":"GK","name":"Peter Schmeichel","nat":"Denmark","club":"Manchester United"},{"pos":"RB","name":"Gary Neville","nat":"England","club":"Manchester United"},{"pos":"CB","name":"Jaap Stam","nat":"Netherlands","club":"Manchester United"},{"pos":"CB","name":"Ronny Johnsen","nat":"Norway","club":"Manchester United"},{"pos":"LB","name":"Jesper Blomqvist","nat":"Sweden","club":"Manchester United"},{"pos":"RM","name":"David Beckham","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Nicky Butt","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Ryan Giggs","nat":"Wales","club":"Manchester United"},{"pos":"LM","name":"Andy Cole","nat":"England","club":"Manchester United"},{"pos":"ST","name":"Dwight Yorke","nat":"Trinidad and Tobago","club":"Manchester United"},{"pos":"ST","name":"Teddy Sheringham","nat":"England","club":"Manchester United"}]},{"id":12,"team":"Manchester City","competition":"Premier League","match":"Premier League vs Southampton (100 Point Season)","difficulty":2,"formation":"433","year":2018,"players":[{"pos":"GK","name":"Ederson","nat":"Brazil","club":"Manchester City"},{"pos":"RB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Vincent Kompany","nat":"Belgium","club":"Manchester City"},{"pos":"CB","name":"Aymeric Laporte","nat":"France","club":"Manchester City"},{"pos":"LB","name":"Fabian Delph","nat":"England","club":"Manchester City"},{"pos":"CM","name":"Fernandinho","nat":"Brazil","club":"Manchester City"},{"pos":"CM","name":"David Silva","nat":"Spain","club":"Manchester City"},{"pos":"CM","name":"Kevin De Bruyne","nat":"Belgium","club":"Manchester City"},{"pos":"RW","name":"Raheem Sterling","nat":"England","club":"Manchester City"},{"pos":"ST","name":"Gabriel Jesus","nat":"Brazil","club":"Manchester City"},{"pos":"LW","name":"Leroy Sane","nat":"Germany","club":"Manchester City"}]},{"id":13,"team":"Barcelona","competition":"Champions League","match":"UEFA Champions League Final vs Manchester United","difficulty":4,"formation":"433","year":2009,"players":[{"pos":"GK","name":"Victor Valdes","nat":"Spain","club":"Barcelona"},{"pos":"RB","name":"Dani Alves","nat":"Brazil","club":"Barcelona"},{"pos":"CB","name":"Gerard Pique","nat":"Spain","club":"Barcelona"},{"pos":"CB","name":"Yaya Toure","nat":"Ivory Coast","club":"Barcelona"},{"pos":"LB","name":"Sylvinho","nat":"Brazil","club":"Barcelona"},{"pos":"CM","name":"Xavi","nat":"Spain","club":"Barcelona"},{"pos":"CM","name":"Sergio Busquets","nat":"Spain","club":"Barcelona"},{"pos":"CM","name":"Andres Iniesta","nat":"Spain","club":"Barcelona"},{"pos":"RW","name":"Lionel Messi","nat":"Argentina","club":"Barcelona"},{"pos":"ST","name":"Samuel Etoo","nat":"Cameroon","club":"Barcelona"},{"pos":"LW","name":"Thierry Henry","nat":"France","club":"Barcelona"}]},{"id":14,"team":"Real Madrid","competition":"Champions League","match":"UEFA Champions League Final vs Bayer Leverkusen","difficulty":4,"formation":"4231","year":2002,"players":[{"pos":"GK","name":"Cesar Sanchez","nat":"Spain","club":"Real Madrid"},{"pos":"RB","name":"Michel Salgado","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Fernando Hierro","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Ivan Helguera","nat":"Spain","club":"Real Madrid"},{"pos":"LB","name":"Roberto Carlos","nat":"Brazil","club":"Real Madrid"},{"pos":"DM","name":"Claude Makelele","nat":"France","club":"Real Madrid"},{"pos":"CM","name":"Zinedine Zidane","nat":"France","club":"Real Madrid"},{"pos":"RW","name":"Luis Figo","nat":"Portugal","club":"Real Madrid"},{"pos":"AM","name":"Raul","nat":"Spain","club":"Real Madrid"},{"pos":"LW","name":"Santiago Solari","nat":"Argentina","club":"Real Madrid"},{"pos":"ST","name":"Fernando Morientes","nat":"Spain","club":"Real Madrid"}]},{"id":15,"team":"Real Madrid","competition":"La Liga","match":"El Clasico vs Barcelona (Galacticos Era)","difficulty":4,"formation":"4231","year":2004,"players":[{"pos":"GK","name":"Iker Casillas","nat":"Spain","club":"Real Madrid"},{"pos":"RB","name":"Michel Salgado","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Walter Samuel","nat":"Argentina","club":"Real Madrid"},{"pos":"CB","name":"Ivan Helguera","nat":"Spain","club":"Real Madrid"},{"pos":"LB","name":"Roberto Carlos","nat":"Brazil","club":"Real Madrid"},{"pos":"CM","name":"David Beckham","nat":"England","club":"Real Madrid"},{"pos":"CM","name":"Zinedine Zidane","nat":"France","club":"Real Madrid"},{"pos":"RW","name":"Luis Figo","nat":"Portugal","club":"Real Madrid"},{"pos":"AM","name":"Raul","nat":"Spain","club":"Real Madrid"},{"pos":"LW","name":"Santiago Solari","nat":"Argentina","club":"Real Madrid"},{"pos":"ST","name":"Ronaldo","nat":"Brazil","club":"Real Madrid"}]},{"id":16,"team":"France","competition":"International","match":"FIFA World Cup Final vs Brazil","difficulty":4,"formation":"442","year":1998,"players":[{"pos":"GK","name":"Fabien Barthez","nat":"France","club":"Monaco"},{"pos":"RB","name":"Lilian Thuram","nat":"France","club":"Parma"},{"pos":"CB","name":"Marcel Desailly","nat":"France","club":"AC Milan"},{"pos":"CB","name":"Frank Leboeuf","nat":"France","club":"Chelsea"},{"pos":"LB","name":"Bixente Lizarazu","nat":"France","club":"Bayern Munich"},{"pos":"RM","name":"Christian Karembeu","nat":"France","club":"Real Madrid"},{"pos":"CM","name":"Didier Deschamps","nat":"France","club":"Juventus"},{"pos":"CM","name":"Emmanuel Petit","nat":"France","club":"Arsenal"},{"pos":"LM","name":"Zinedine Zidane","nat":"France","club":"Juventus"},{"pos":"ST","name":"Youri Djorkaeff","nat":"France","club":"Inter Milan"},{"pos":"ST","name":"Stephane Guivarc'h","nat":"France","club":"Auxerre"}]},{"id":17,"team":"Germany","competition":"International","match":"FIFA World Cup Final vs Argentina","difficulty":3,"formation":"433","year":2014,"players":[{"pos":"GK","name":"Manuel Neuer","nat":"Germany","club":"Bayern Munich"},{"pos":"RB","name":"Philipp Lahm","nat":"Germany","club":"Bayern Munich"},{"pos":"CB","name":"Jerome Boateng","nat":"Germany","club":"Bayern Munich"},{"pos":"CB","name":"Mats Hummels","nat":"Germany","club":"Borussia Dortmund"},{"pos":"LB","name":"Benedikt Howedes","nat":"Germany","club":"Schalke"},{"pos":"CM","name":"Bastian Schweinsteiger","nat":"Germany","club":"Bayern Munich"},{"pos":"CM","name":"Toni Kroos","nat":"Germany","club":"Bayern Munich"},{"pos":"CM","name":"Christoph Kramer","nat":"Germany","club":"Borussia Monchengladbach"},{"pos":"RW","name":"Thomas Muller","nat":"Germany","club":"Bayern Munich"},{"pos":"ST","name":"Miroslav Klose","nat":"Germany","club":"Lazio"},{"pos":"LW","name":"Mesut Ozil","nat":"Germany","club":"Arsenal"}]},{"id":18,"team":"Spain","competition":"International","match":"UEFA Euro 2008 Final vs Germany","difficulty":3,"formation":"4141","year":2008,"players":[{"pos":"GK","name":"Iker Casillas","nat":"Spain","club":"Real Madrid"},{"pos":"RB","name":"Sergio Ramos","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Carlos Puyol","nat":"Spain","club":"Barcelona"},{"pos":"CB","name":"Carlos Marchena","nat":"Spain","club":"Valencia"},{"pos":"LB","name":"Joan Capdevila","nat":"Spain","club":"Villarreal"},{"pos":"DM","name":"Marcos Senna","nat":"Spain","club":"Villarreal"},{"pos":"RM","name":"David Silva","nat":"Spain","club":"Valencia"},{"pos":"CM","name":"Cesc Fabregas","nat":"Spain","club":"Arsenal"},{"pos":"LM","name":"Andres Iniesta","nat":"Spain","club":"Barcelona"},{"pos":"AM","name":"Xavi","nat":"Spain","club":"Barcelona"},{"pos":"ST","name":"Fernando Torres","nat":"Spain","club":"Liverpool"}]},{"id":19,"team":"AC Milan","competition":"Champions League","match":"UEFA Champions League Final vs Juventus (pen)","difficulty":4,"formation":"442","year":2003,"players":[{"pos":"GK","name":"Dida","nat":"Brazil","club":"AC Milan"},{"pos":"RB","name":"Kakha Kaladze","nat":"Georgia","club":"AC Milan"},{"pos":"CB","name":"Alessandro Costacurta","nat":"Italy","club":"AC Milan"},{"pos":"CB","name":"Alessandro Nesta","nat":"Italy","club":"AC Milan"},{"pos":"LB","name":"Paolo Maldini","nat":"Italy","club":"AC Milan"},{"pos":"RM","name":"Clarence Seedorf","nat":"Netherlands","club":"AC Milan"},{"pos":"CM","name":"Andrea Pirlo","nat":"Italy","club":"AC Milan"},{"pos":"CM","name":"Gennaro Gattuso","nat":"Italy","club":"AC Milan"},{"pos":"LM","name":"Rui Costa","nat":"Portugal","club":"AC Milan"},{"pos":"ST","name":"Andriy Shevchenko","nat":"Ukraine","club":"AC Milan"},{"pos":"ST","name":"Filippo Inzaghi","nat":"Italy","club":"AC Milan"}]},{"id":20,"team":"Blackburn Rovers","competition":"Premier League","match":"Premier League Title Winners vs Liverpool (Final Day)","difficulty":3,"formation":"442","year":1995,"players":[{"pos":"GK","name":"Tim Flowers","nat":"England","club":"Blackburn Rovers"},{"pos":"RB","name":"Henning Berg","nat":"Norway","club":"Blackburn Rovers"},{"pos":"CB","name":"Colin Hendry","nat":"Scotland","club":"Blackburn Rovers"},{"pos":"CB","name":"Ian Pearce","nat":"England","club":"Blackburn Rovers"},{"pos":"LB","name":"Graeme Le Saux","nat":"England","club":"Blackburn Rovers"},{"pos":"RM","name":"Stuart Ripley","nat":"England","club":"Blackburn Rovers"},{"pos":"CM","name":"Tim Sherwood","nat":"England","club":"Blackburn Rovers"},{"pos":"CM","name":"David Batty","nat":"England","club":"Blackburn Rovers"},{"pos":"LM","name":"Jason Wilcox","nat":"England","club":"Blackburn Rovers"},{"pos":"ST","name":"Alan Shearer","nat":"England","club":"Blackburn Rovers"},{"pos":"ST","name":"Chris Sutton","nat":"England","club":"Blackburn Rovers"}]},{"id":21,"team":"Leeds United","competition":"First Division","match":"First Division Title Winners vs Sheffield United (Final Day)","difficulty":5,"formation":"442","year":1992,"players":[{"pos":"GK","name":"John Lukic","nat":"England","club":"Leeds United"},{"pos":"RB","name":"Mel Sterland","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Chris Fairclough","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Chris Whyte","nat":"England","club":"Leeds United"},{"pos":"LB","name":"Tony Dorigo","nat":"England","club":"Leeds United"},{"pos":"RM","name":"Gordon Strachan","nat":"Scotland","club":"Leeds United"},{"pos":"CM","name":"David Batty","nat":"England","club":"Leeds United"},{"pos":"CM","name":"Gary McAllister","nat":"Scotland","club":"Leeds United"},{"pos":"LM","name":"Gary Speed","nat":"Wales","club":"Leeds United"},{"pos":"ST","name":"Rod Wallace","nat":"England","club":"Leeds United"},{"pos":"ST","name":"Lee Chapman","nat":"England","club":"Leeds United"}]},{"id":22,"team":"Leeds United","competition":"Championship","match":"Championship Title Winners vs Charlton Athletic","difficulty":1,"formation":"433","year":2020,"players":[{"pos":"GK","name":"Illan Meslier","nat":"France","club":"Leeds United"},{"pos":"RB","name":"Luke Ayling","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Ben White","nat":"England","club":"Brighton"},{"pos":"CB","name":"Liam Cooper","nat":"Scotland","club":"Leeds United"},{"pos":"LB","name":"Stuart Dallas","nat":"Northern Ireland","club":"Leeds United"},{"pos":"CM","name":"Kalvin Phillips","nat":"England","club":"Leeds United"},{"pos":"CM","name":"Mateusz Klich","nat":"Poland","club":"Leeds United"},{"pos":"CM","name":"Pablo Hernandez","nat":"Spain","club":"Leeds United"},{"pos":"RW","name":"Helder Costa","nat":"Portugal","club":"Leeds United"},{"pos":"ST","name":"Patrick Bamford","nat":"England","club":"Leeds United"},{"pos":"LW","name":"Jack Harrison","nat":"England","club":"Leeds United"}]},{"id":23,"team":"Leeds United","competition":"Championship","match":"Championship Playoff Final vs Southampton at Wembley","difficulty":3,"formation":"4231","year":2024,"players":[{"pos":"GK","name":"Illan Meslier","nat":"France","club":"Leeds United"},{"pos":"RB","name":"Archie Gray","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Joe Rodon","nat":"Wales","club":"Leeds United"},{"pos":"CB","name":"Ethan Ampadu","nat":"Wales","club":"Leeds United"},{"pos":"LB","name":"Junior Firpo","nat":"Dominican Republic","club":"Leeds United"},{"pos":"DM","name":"Ilia Gruev","nat":"Bulgaria","club":"Leeds United"},{"pos":"DM","name":"Glen Kamara","nat":"Finland","club":"Leeds United"},{"pos":"RW","name":"Wilfried Gnonto","nat":"Italy","club":"Leeds United"},{"pos":"AM","name":"Georginio Rutter","nat":"France","club":"Leeds United"},{"pos":"LW","name":"Crysencio Summerville","nat":"Netherlands","club":"Leeds United"},{"pos":"ST","name":"Joel Piroe","nat":"Netherlands","club":"Leeds United"}]},
+{"id":24,"team":"England","competition":"International","match":"FIFA World Cup Round of 16 vs Argentina (Beckham red card)","difficulty":3,"formation":"532","year":1998,"players":[
+  {"pos":"GK","name":"David Seaman","nat":"England","club":"Arsenal"},
+  {"pos":"RB","name":"Gary Neville","nat":"England","club":"Manchester United"},
+  {"pos":"CB","name":"Sol Campbell","nat":"England","club":"Arsenal"},
+  {"pos":"CB","name":"Tony Adams","nat":"England","club":"Arsenal"},
+  {"pos":"CB","name":"Gareth Southgate","nat":"England","club":"Aston Villa"},
+  {"pos":"LB","name":"Graeme Le Saux","nat":"England","club":"Chelsea"},
+  {"pos":"RM","name":"David Beckham","nat":"England","club":"Manchester United"},
+  {"pos":"CM","name":"Paul Ince","nat":"England","club":"Liverpool"},
+  {"pos":"LM","name":"Paul Scholes","nat":"England","club":"Manchester United"},
+  {"pos":"ST","name":"Michael Owen","nat":"England","club":"Liverpool"},
+  {"pos":"ST","name":"Alan Shearer","nat":"England","club":"Newcastle United"}
+]},
+{"id":25,"team":"England","competition":"International","match":"FIFA World Cup Quarter Final vs Brazil (Ronaldinho lob)","difficulty":3,"formation":"442","year":2002,"players":[
+  {"pos":"GK","name":"David Seaman","nat":"England","club":"Arsenal"},
+  {"pos":"RB","name":"Danny Mills","nat":"England","club":"Leeds United"},
+  {"pos":"CB","name":"Rio Ferdinand","nat":"England","club":"Leeds United"},
+  {"pos":"CB","name":"Sol Campbell","nat":"England","club":"Arsenal"},
+  {"pos":"LB","name":"Ashley Cole","nat":"England","club":"Arsenal"},
+  {"pos":"RM","name":"Trevor Sinclair","nat":"England","club":"West Ham United"},
+  {"pos":"CM","name":"Nicky Butt","nat":"England","club":"Manchester United"},
+  {"pos":"CM","name":"Paul Scholes","nat":"England","club":"Manchester United"},
+  {"pos":"LM","name":"David Beckham","nat":"England","club":"Manchester United"},
+  {"pos":"ST","name":"Michael Owen","nat":"England","club":"Liverpool"},
+  {"pos":"ST","name":"Emile Heskey","nat":"England","club":"Liverpool"}
+]},
+{"id":26,"team":"England","competition":"International","match":"UEFA Euro 2004 Quarter Final vs Portugal (penalty shootout)","difficulty":2,"formation":"442","year":2004,"players":[
+  {"pos":"GK","name":"David James","nat":"England","club":"Manchester City"},
+  {"pos":"RB","name":"Gary Neville","nat":"England","club":"Manchester United"},
+  {"pos":"CB","name":"Sol Campbell","nat":"England","club":"Arsenal"},
+  {"pos":"CB","name":"John Terry","nat":"England","club":"Chelsea"},
+  {"pos":"LB","name":"Ashley Cole","nat":"England","club":"Arsenal"},
+  {"pos":"RM","name":"David Beckham","nat":"England","club":"Real Madrid"},
+  {"pos":"CM","name":"Frank Lampard","nat":"England","club":"Chelsea"},
+  {"pos":"CM","name":"Steven Gerrard","nat":"England","club":"Liverpool"},
+  {"pos":"LM","name":"Paul Scholes","nat":"England","club":"Manchester United"},
+  {"pos":"ST","name":"Wayne Rooney","nat":"England","club":"Everton"},
+  {"pos":"ST","name":"Michael Owen","nat":"England","club":"Real Madrid"}
+]},
+{"id":27,"team":"Italy","competition":"International","match":"FIFA World Cup Final vs France (Zidane headbutt)","difficulty":3,"formation":"4231","year":2006,"players":[
+  {"pos":"GK","name":"Gianluigi Buffon","nat":"Italy","club":"Juventus"},
+  {"pos":"RB","name":"Gianluca Zambrotta","nat":"Italy","club":"Juventus"},
+  {"pos":"CB","name":"Fabio Cannavaro","nat":"Italy","club":"Real Madrid"},
+  {"pos":"CB","name":"Marco Materazzi","nat":"Italy","club":"Inter Milan"},
+  {"pos":"LB","name":"Fabio Grosso","nat":"Italy","club":"Palermo"},
+  {"pos":"DM","name":"Gennaro Gattuso","nat":"Italy","club":"AC Milan"},
+  {"pos":"DM","name":"Andrea Pirlo","nat":"Italy","club":"AC Milan"},
+  {"pos":"RM","name":"Mauro Camoranesi","nat":"Italy","club":"Juventus"},
+  {"pos":"AM","name":"Francesco Totti","nat":"Italy","club":"Roma"},
+  {"pos":"LM","name":"Simone Perrotta","nat":"Italy","club":"Roma"},
+  {"pos":"ST","name":"Luca Toni","nat":"Italy","club":"Fiorentina"}
+]},
+{"id":28,"team":"Italy","competition":"International","match":"UEFA Euro 2020 Final vs England at Wembley","difficulty":1,"formation":"433","year":2021,"players":[
+  {"pos":"GK","name":"Gianluigi Donnarumma","nat":"Italy","club":"AC Milan"},
+  {"pos":"RB","name":"Giovanni Di Lorenzo","nat":"Italy","club":"Napoli"},
+  {"pos":"CB","name":"Leonardo Bonucci","nat":"Italy","club":"Juventus"},
+  {"pos":"CB","name":"Giorgio Chiellini","nat":"Italy","club":"Juventus"},
+  {"pos":"LB","name":"Emerson","nat":"Italy","club":"Chelsea"},
+  {"pos":"CM","name":"Nicolo Barella","nat":"Italy","club":"Inter Milan"},
+  {"pos":"CM","name":"Jorginho","nat":"Italy","club":"Chelsea"},
+  {"pos":"CM","name":"Marco Verratti","nat":"Italy","club":"PSG"},
+  {"pos":"RW","name":"Federico Chiesa","nat":"Italy","club":"Juventus"},
+  {"pos":"ST","name":"Ciro Immobile","nat":"Italy","club":"Lazio"},
+  {"pos":"LW","name":"Lorenzo Insigne","nat":"Italy","club":"Napoli"}
+]},
+{"id":29,"team":"Brazil","competition":"International","match":"FIFA World Cup Final vs Germany (Ronaldo brace)","difficulty":4,"formation":"442","year":2002,"players":[
+  {"pos":"GK","name":"Marcos","nat":"Brazil","club":"Palmeiras"},
+  {"pos":"RB","name":"Cafu","nat":"Brazil","club":"Roma"},
+  {"pos":"CB","name":"Lucio","nat":"Brazil","club":"Bayer Leverkusen"},
+  {"pos":"CB","name":"Edmilson","nat":"Brazil","club":"Lyon"},
+  {"pos":"LB","name":"Roberto Carlos","nat":"Brazil","club":"Real Madrid"},
+  {"pos":"RM","name":"Kleberson","nat":"Brazil","club":"Atletico Paranaense"},
+  {"pos":"CM","name":"Gilberto Silva","nat":"Brazil","club":"Arsenal"},
+  {"pos":"CM","name":"Ronaldinho","nat":"Brazil","club":"PSG"},
+  {"pos":"LM","name":"Rivaldo","nat":"Brazil","club":"Barcelona"},
+  {"pos":"ST","name":"Ronaldo","nat":"Brazil","club":"Inter Milan"},
+  {"pos":"ST","name":"Edilson","nat":"Brazil","club":"Cruzeiro"}
+]}];
 
 const FLAGS={"England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Wales":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","Republic of Ireland":"🇮🇪","France":"🇫🇷","Spain":"🇪🇸","Germany":"🇩🇪","Italy":"🇮🇹","Netherlands":"🇳🇱","Portugal":"🇵🇹","Brazil":"🇧🇷","Argentina":"🇦🇷","Australia":"🇦🇺","Norway":"🇳🇴","Sweden":"🇸🇪","Denmark":"🇩🇰","Finland":"🇫🇮","Poland":"🇵🇱","Belgium":"🇧🇪","Ivory Coast":"🇨🇮","Cameroon":"🇨🇲","Mali":"🇲🇱","Ghana":"🇬🇭","Algeria":"🇩🇿","Nigeria":"🇳🇬","Japan":"🇯🇵","Czech Republic":"🇨🇿","Jamaica":"🇯🇲","Trinidad and Tobago":"🇹🇹","Austria":"🇦🇹","Morocco":"🇲🇦","Senegal":"🇸🇳","South Korea":"🇰🇷","Croatia":"🇭🇷","Switzerland":"🇨🇭"};
 function flag(n){return FLAGS[n]||'🌍';}
@@ -502,49 +577,55 @@ function flag(n){return FLAGS[n]||'🌍';}
 // All y values chosen so the dot+tag fits within the pitch at typical screen sizes
 const LAYOUTS={
   "442":[
-    {x:50,y:85},
-    {x:82,y:70},{x:61,y:70},{x:39,y:70},{x:18,y:70},
-    {x:82,y:49},{x:62,y:53},{x:38,y:53},{x:18,y:49},
-    {x:65,y:24},{x:35,y:24}
+    {x:50,y:82},
+    {x:79,y:68},{x:60,y:68},{x:40,y:68},{x:21,y:68},
+    {x:79,y:47},{x:61,y:51},{x:39,y:51},{x:21,y:47},
+    {x:64,y:22},{x:36,y:22}
   ],
   "433":[
-    {x:50,y:85},
-    {x:82,y:70},{x:61,y:70},{x:39,y:70},{x:18,y:70},
-    {x:68,y:49},{x:50,y:49},{x:32,y:49},
-    {x:82,y:19},{x:50,y:15},{x:18,y:19}
+    {x:50,y:82},
+    {x:79,y:68},{x:60,y:68},{x:40,y:68},{x:21,y:68},
+    {x:67,y:47},{x:50,y:47},{x:33,y:47},
+    {x:79,y:17},{x:50,y:13},{x:21,y:17}
   ],
   "343":[
-    {x:50,y:85},
-    {x:68,y:70},{x:50,y:70},{x:32,y:70},
-    {x:83,y:49},{x:61,y:53},{x:39,y:53},{x:17,y:49},
-    {x:76,y:21},{x:24,y:21},{x:50,y:16}
+    {x:50,y:82},
+    {x:67,y:68},{x:50,y:68},{x:33,y:68},
+    {x:80,y:47},{x:61,y:51},{x:39,y:51},{x:20,y:47},
+    {x:75,y:19},{x:25,y:19},{x:50,y:14}
   ],
   "4231":[
-    {x:50,y:85},
-    {x:82,y:71},{x:61,y:71},{x:39,y:71},{x:18,y:71},
-    {x:63,y:58},{x:37,y:58},
-    {x:79,y:40},{x:50,y:38},{x:21,y:40},
-    {x:50,y:17}
+    {x:50,y:82},
+    {x:79,y:69},{x:60,y:69},{x:40,y:69},{x:21,y:69},
+    {x:62,y:56},{x:38,y:56},
+    {x:78,y:38},{x:50,y:36},{x:22,y:38},
+    {x:50,y:15}
   ],
   "352":[
-    {x:50,y:85},
-    {x:68,y:70},{x:50,y:70},{x:32,y:70},
-    {x:85,y:49},{x:67,y:53},{x:50,y:53},{x:33,y:53},{x:15,y:49},
-    {x:65,y:24},{x:35,y:24}
+    {x:50,y:82},
+    {x:67,y:68},{x:50,y:68},{x:33,y:68},
+    {x:83,y:47},{x:66,y:51},{x:50,y:51},{x:34,y:51},{x:17,y:47},
+    {x:64,y:22},{x:36,y:22}
   ],
   "4411":[
-    {x:50,y:85},
-    {x:82,y:70},{x:61,y:70},{x:39,y:70},{x:18,y:70},
-    {x:82,y:50},{x:61,y:54},{x:39,y:54},{x:18,y:50},
-    {x:50,y:34},
-    {x:50,y:17}
+    {x:50,y:82},
+    {x:79,y:68},{x:60,y:68},{x:40,y:68},{x:21,y:68},
+    {x:79,y:48},{x:60,y:52},{x:40,y:52},{x:21,y:48},
+    {x:50,y:32},
+    {x:50,y:15}
   ],
   "4141":[
-    {x:50,y:85},
-    {x:82,y:70},{x:61,y:70},{x:39,y:70},{x:18,y:70},
-    {x:50,y:60},
-    {x:80,y:44},{x:60,y:44},{x:40,y:44},{x:20,y:44},
-    {x:50,y:17}
+    {x:50,y:82},
+    {x:79,y:68},{x:60,y:68},{x:40,y:68},{x:21,y:68},
+    {x:50,y:58},
+    {x:79,y:42},{x:60,y:42},{x:40,y:42},{x:21,y:42},
+    {x:50,y:15}
+  ],
+  "532":[
+    {x:50,y:82},
+    {x:79,y:68},{x:61,y:68},{x:50,y:65},{x:39,y:68},{x:21,y:68},
+    {x:79,y:45},{x:50,y:45},{x:21,y:45},
+    {x:64,y:22},{x:36,y:22}
   ]
 };
 
@@ -648,71 +729,121 @@ const REVEAL_PENALTY  = 150;
 
 function getGrade(score){
   const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
-  if(score===1100) return {letter:'S', color:'#FFD700', label:pick([
-    'Pure class. No hints needed.',
-    'Absolute legend. You knew every single one.',
-    'Top of the table. Utterly flawless.',
-    "That's a Ballon d'Or performance right there.",
-    'The full 90 and not a single lifeline needed.',
-    'Pep himself would be taking notes.',
-    "You didn't need the assistant manager once.",
+  if(score===1100) return {letter:'S',color:'#FFD700',label:pick([
+    'Ronaldo at Real Madrid 2002. You were unstoppable.',
+    'Zidane at his absolute peak. Pure football intelligence.',
+    'Messi at Barcelona. You just knew every answer.',
+    'Ronaldinho in 2005. Effortless, creative, complete.',
+    'Van Basten at Euro 88. Clinical and untouchable.',
+    'Maradona in 1986. Nobody could live with you.',
+    "Pep's 2011 Barcelona. Tactically perfect in every position.",
+    'Prime Cantona. Regal, unhurried, immaculate.',
+    "Xavi in his pomp. You controlled this like a metronome.",
+    'Paolo Maldini. You made it look completely effortless.',
+    'Ronaldo Nazario in 2002. Two goals in the final, zero wasted hints.',
+    "Pirlo in midfield. You didn't need to run — you just knew.",
   ])};
-  if(score>=950) return {letter:'A', color:'#B5FF4D', label:pick([
-    'Brilliant — nearly perfect.',
-    'Champions League standard right there.',
-    "Almost flawless. Man of the Match stuff.",
-    'Clinical finishing. Tiny bit of help but barely.',
-    'The scout report is glowing.',
-    "Top drawer. You know your football.",
-    'One slip but you recovered well. Impressive.',
+  if(score>=950) return {letter:'A',color:'#B5FF4D',label:pick([
+    'Thierry Henry in 2004. Clinical with barely a wasted touch.',
+    'Gerrard on a European night. Almost perfect, truly unforgettable.',
+    'Lampard at Chelsea. Composed, consistent, nearly flawless.',
+    "Robben cutting inside. Predictable to some, unstoppable to most.",
+    'Prime Shearer. Powerful, accurate, barely needed any help.',
+    'Drogba in a final. Turned up when it mattered most.',
+    "Schmeichel at his best. Almost nothing got past you.",
+    'Bergkamp on the ball. Graceful and near-perfect throughout.',
+    "Roy Keane in midfield. Controlled everything with minimal fuss.",
+    'Iniesta at the World Cup. Subtle, brilliant, decisive.',
+    'Cafu at right back. Attack, defend, assist — barely needed guidance.',
+    "Roberto Carlos. You did it with style and barely asked for help.",
   ])};
-  if(score>=750) return {letter:'B', color:'#5bc8ff', label:pick([
-    'Solid performance. You know your football.',
-    'Good outing — a few rough edges though.',
-    'Europa League level. Respectable showing.',
-    "Not bad at all. You've got potential.",
-    'A reliable squad player. Keep working.',
-    'Good shift. The manager noticed.',
-    "You're in the XI but there's room to improve.",
+  if(score>=750) return {letter:'B',color:'#5bc8ff',label:pick([
+    'Scholes in midfield. Good but needed a nudge here and there.',
+    "Gareth Bale at Spurs. Brilliant but needed the right support.",
+    'Michael Carrick. Underrated, dependable, quietly effective.',
+    "Teddy Sheringham. Clever movement but couldn't do it alone.",
+    "Joe Cole on a good day. Glimpses of magic, a bit inconsistent.",
+    'Carew at Villa. Big, effective, needed a bit of help though.',
+    "Berbatov at his best. Languid, skilful, but not always fully committed.",
+    "Robbie Fowler. Sharp enough, just needed a few pointers.",
+    "Emile Heskey alongside Owen. Did the hard work, held things together.",
+    "Mascherano at Liverpool. Gritty, committed, did a solid job.",
+    "Dirk Kuyt. You ran all day and got most of them. Workmanlike.",
+    "Nicky Butt at United. Quietly got on with it. Reliable if unspectacular.",
   ])};
-  if(score>=450) return {letter:'C', color:'#ff9f1c', label:pick([
-    "Mid-table. You'll want to push on from here.",
-    'Needed the manager to bail you out a few times.',
-    'A draw at best. More to give next time.',
-    "You're in the squad but not starting.",
-    'Decent effort — just a few too many lifelines.',
-    'The fans are patient. For now.',
-    "You've seen worse — but you've done better.",
+  if(score>=450) return {letter:'C',color:'#ff9f1c',label:pick([
+    "Zlatan at Barcelona. The talent was obvious but something didn't quite fit.",
+    'Beckham at Real Madrid. Brilliant in flashes but needed the system around him.',
+    "Shevchenko at Chelsea. Arrived with a big reputation, struggled to deliver.",
+    "Torres at Chelsea. Flickers of the old magic but too many blanks.",
+    'Robinho at Man City. Flashy in parts, nowhere near consistent enough.',
+    "Veron at Man United. World class elsewhere, never found his feet.",
+    "Santa Cruz at Man City. Everyone thought it would click. It didn't.",
+    "Andy Carroll at Liverpool. Powerful, promising, just not quite right.",
+    "Mutu at Chelsea. Promising enough but left a lot on the table.",
+    "Roque Santa Cruz again. Still not sure what the plan was there.",
+    "Lassana Diarra at Arsenal. The potential was clear. The output wasn't.",
+    "Kleberson at Man United. Showed flashes. Not enough of them.",
   ])};
-  if(score>=100) return {letter:'D', color:'#ff9f1c', label:pick([
-    'Struggling in the relegation zone.',
-    'The fans are getting restless in the stands.',
-    "You'll need a busy January transfer window.",
-    'Back to the training ground for you.',
-    'The physio saw more of the pitch than you did.',
-    "It's a difficult watch. The board are worried.",
-    'Not great. The gaffer wants a word.',
+  if(score>=250) return {letter:'D',color:'#ff9f1c',label:pick([
+    "Djorkaeff at Bolton. Past his best and needed carrying through it.",
+    "Kleberson at United, bad day. Never really got going, did he.",
+    "Bebe at Man United. Ferguson said he was good. The evidence disagreed.",
+    "Afonso Alves at Middlesbrough. £12m and a lot of misplaced optimism.",
+    "Jon Dahl Tomasson at Newcastle. One goal. One. The fans still remember.",
+    "Stefan Schwarz at Sunderland. Had a clause against space travel. Needed one for better form.",
+    "Celestine Babayaro at Newcastle. A signing lost to time for good reason.",
+    "Park at QPR. An absolute stalwart somewhere else. Not here.",
+    "Litmanen at Liverpool. What could have been. Sadly, really wasn't.",
+    "Emerson at Chelsea, the bad one. Not the Italian one. The other one.",
+    "Christian Negouai at Man City. Made 3 appearances. This felt similar.",
+    "Nii Lamptey at Aston Villa. Pele said he'd be his successor. He was not.",
   ])};
-  return {letter:'F', color:'#ff5c5c', label:pick([
-    'Relegated. No arguments whatsoever.',
-    'The chairman has called an emergency meeting.',
-    'That was a Sunday League performance.',
-    'Sacked in the morning. Sacked in the morning.',
-    "Even autocomplete would've done better.",
-    'The stadium announcer knew more than you did.',
-    "You're on a free transfer. No takers yet.",
+  return {letter:'F',color:'#ff5c5c',label:pick([
+    "Ali Dia. Was that even you playing? 53 minutes and a legend was born.",
+    "Massimo Taibi. The drizzler went through your legs. You know the one.",
+    "Winston Bogarde at Chelsea. Four years. Barely a minute. Maximum wages.",
+    "Marcelino at Newcastle. Arrived. Looked confused. Left quietly.",
+    "Eric Djemba-Djemba. The name was considerably better than the football.",
+    "Jordi Cruyff at Man United. The son of God. The football was not divine.",
+    "Titi Camara at Liverpool. Nobody's quite sure how you got here.",
+    "Sieb Dijkstra at QPR. You peaked at the pub quiz question.",
+    "Jovan Kirovski at Man United. Three appearances. No goals. One mystery.",
+    "Dion Dublin at Villa. Fine career. This game was not part of it.",
+    "Seba Veron, the second season. Remarkably, even worse than the first.",
+    "Cherno Samba. Legendary in Football Manager. Less so in real life. Or here.",
   ])};
 }
+
+
 
 function startTimer(){
   clearInterval(scoreTimer);
   // No score drain — just track elapsed time for display & time bonus
   scoreTimer=setInterval(()=>{},9999);
 }
+function showScoreFlash(pts){
+  if(!pts||pts<=0)return;
+  const el=document.getElementById('score-flash');
+  if(!el)return;
+  el.textContent='+'+pts;
+  el.style.animation='none';
+  void el.offsetWidth; // force reflow
+  el.style.animation='scoreFlash 0.85s ease forwards';
+}
+
 function renderScore(flash){
   const el=document.getElementById('score-num');
   el.textContent=S.score.toLocaleString();
-  if(flash){el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),500);}
+  if(flash){
+    el.classList.remove('hit');
+    el.style.animation='none';
+    requestAnimationFrame(()=>{
+      el.style.animation='scoreUp 0.35s ease';
+      el.classList.add('hit');
+      setTimeout(()=>{el.classList.remove('hit');el.style.animation='';},400);
+    });
+  }
 }
 
 function init(puzzle){
@@ -757,8 +888,8 @@ function buildPitch(){
   const isNatTeam=['England','Spain','France','Germany','Italy','Argentina','Brazil','Portugal','Netherlands','Belgium'].includes(S.puzzle.team);
   const natBtn=document.getElementById('btn-nat');
   natBtn.innerHTML=isNatTeam
-    ? '🏟️ Club Side<span class="cost">−50 pts</span>'
-    : '🌍 Nationality<span class="cost">−50 pts</span>';
+    ? '🏟️ Reveal Club<span class="cost">−40 pts</span>'
+    : '🌍 Reveal Nationality<span class="cost">−40 pts</span>';
 
   S.puzzle.players.forEach((p,i)=>{
     const pos=S.layout[i]||{x:50,y:50};
@@ -796,36 +927,28 @@ function setActive(i){
 
 function renderStrip(){
   const i=S.activeIdx;
-  const prompt=document.getElementById('sel-prompt');
-  const posEl=document.getElementById('sel-pos');
-  const countEl=document.getElementById('sel-count');
-  const subEl=document.getElementById('sel-sub');
   const revOne=document.getElementById('reveal-one-btn');
+  const natBtn=document.getElementById('btn-nat');
+  const initBtn=document.getElementById('btn-init');
 
+  // No player selected or already solved — disable reveal
   if(i===null||i===undefined||S.solved.has(i)){
-    posEl.textContent='—'; countEl.textContent=''; subEl.textContent='';
-    prompt.style.display='block';
-    prompt.textContent=(i!==null&&i!==undefined&&S.solved.has(i))?'✓ Solved! Tap another ↑':'Tap a player ↑';
-    if(revOne)revOne.style.display='none';
+    if(revOne) revOne.disabled=true;
     return;
   }
-  const p=S.puzzle.players[i];
-  const sn=getSurname(p.name);
-  const initRevealed=S.initDone.has(i);
-  const natRevealed=S.natDone.has(i);
-  posEl.textContent=p.pos;
-  countEl.textContent=initRevealed ? sn[0].toUpperCase()+'·'.repeat(sn.length-1) : `(${sn.length} letters)`;
-  subEl.textContent=natRevealed ? `${flag(p.nat)} ${hintLabel(p,S.puzzle)}` : '';
-  prompt.style.display='none';
-  if(revOne)revOne.style.display='block';
-  // Update letter button cost based on how many letters already revealed for this player
+
+  // Player selected — enable reveal, update letter cost
+  if(revOne) revOne.disabled=false;
+  const sn=getSurname(S.puzzle.players[i].name);
   const already=S.lettersRevealed.get(i)||0;
   const nextIdx=already;
   const nextCost=nextIdx<HINT_COST_LETTER.length ? HINT_COST_LETTER[nextIdx] : HINT_COST_LETTER[HINT_COST_LETTER.length-1];
   const remaining=sn.length-already;
-  document.getElementById('btn-init').innerHTML=remaining>0
-    ? (nextCost>0 ? `🔤 Next Letter<span class="cost">-${nextCost}pts</span>` : `🔤 Next Letter<span class="cost">free</span>`)
-    : `🔤 All Letters<span class="cost">revealed</span>`;
+  const letterNum=already+1;
+  const letterLabel=letterNum===1?'1st':letterNum===2?'2nd':letterNum===3?'3rd':letterNum+'th';
+  if(initBtn) initBtn.innerHTML=remaining>0
+    ? (nextCost>0 ? `🔤 Reveal ${letterLabel} Letter<span class="cost">-${nextCost}pts</span>` : `🔤 Reveal ${letterLabel} Letter<span class="cost">free</span>`)
+    : `🔤 All Letters Shown`;
 }
 
 function renderUI(){
@@ -851,6 +974,7 @@ function awardAndSolve(i,name){
   S.score+=pts;
   S.score=Math.max(-500,S.score); // floor at -500
   renderScore(pts!==0);
+  if(pts>0) showScoreFlash(pts);
   solveDot(i,name);
 }
 
@@ -948,7 +1072,7 @@ function guess(val){
 
   if(hit){
     S.guesses++;
-    toast('✓ '+hitName,'ok');
+    toast('✓ '+hitName,'ok');haptic('correct');soundCorrect();
     document.getElementById('guess-input').value='';
     if(S.solved.size===S.puzzle.players.length){
       S.done=true; // prevent any further guesses while win screen loads
@@ -983,7 +1107,9 @@ function guess(val){
   // Full wrong guess
   S.guesses++;
   S.wrong++;
-  toast('Not in this lineup','bad');
+  // Soft anti-spam: after 30 wrong guesses show a nudge
+  if(S.wrong===30) toast('💡 Try using hints if you\'re stuck!','info');
+  toast('Not in this lineup','bad');haptic('wrong');soundWrong();
   const inp=document.getElementById('guess-input');
   inp.classList.add('shake');
   setTimeout(()=>inp.classList.remove('shake'),400);
@@ -1005,7 +1131,7 @@ function doNat(){
   const fl=flag(p.nat);
   const tclue=document.getElementById(`tclue-${i}`);
   if(tclue){tclue.textContent=`${fl} ${lbl}`;tclue.style.display='block';}
-  toast(`${fl} ${lbl}`,'info');
+  toast(`${fl} ${lbl}`,'info');haptic('hint');soundHint();
   renderUI();
 }
 
@@ -1035,10 +1161,23 @@ function doInit(){
   const nextIdx=next;
   const nextCost=nextIdx<HINT_COST_LETTER.length ? HINT_COST_LETTER[nextIdx] : HINT_COST_LETTER[HINT_COST_LETTER.length-1];
   const remaining=sn.length-next;
+  const nextLetterNum=next+1;
+  const nextLabel=nextLetterNum===1?'1st':nextLetterNum===2?'2nd':nextLetterNum===3?'3rd':nextLetterNum+'th';
   document.getElementById('btn-init').innerHTML=remaining>0
-    ? (nextCost>0 ? `🔤 Next Letter<span class="cost">-${nextCost}pts</span>` : `🔤 Next Letter<span class="cost">free</span>`)
-    : `🔤 All Letters<span class="cost">revealed</span>`;
+    ? (nextCost>0 ? `🔤 Show ${nextLabel} Letter<span class="cost">−${nextCost} pts</span>` : `🔤 Show ${nextLabel} Letter<span class="cost">free</span>`)
+    : `🔤 All Letters Shown`;
   toast(`Letter ${next}/${sn.length}: ${hint}`,'info');
+
+  // Auto-solve if all letters now revealed
+  if(next>=sn.length){
+    S.solved.add(i);
+    awardAndSolve(i,S.puzzle.players[i].name);
+    toast(`✓ ${getSurname(S.puzzle.players[i].name)}`,'ok');
+    if(S.solved.size===S.puzzle.players.length){
+      S.done=true;
+      setTimeout(showWin,1000);
+    }
+  }
   renderUI();
 }
 
@@ -1102,6 +1241,15 @@ function showWin(){
   // Populate card
   S.score=finalScore;
   document.getElementById('wsub').textContent=`${S.puzzle.team} · ${S.puzzle.year} · ${S.puzzle.competition}`;
+  // Show challenge result if applicable
+  const chalResult=checkChallengeWin(finalScore,challengeParam);
+  if(chalResult){
+    const sub=document.getElementById('wsub');
+    const div=document.createElement('div');
+    div.style.cssText='font-size:0.95rem;font-weight:800;color:var(--lime);margin-bottom:6px;font-family:var(--fh)';
+    div.textContent=chalResult;
+    sub.parentNode.insertBefore(div,sub);
+  }
   document.getElementById('wfinal-score').textContent=finalScore.toLocaleString();
   document.getElementById('wt').textContent=`⏱ ${timeStr}`;
   // Wrong guesses not shown — all players must be completed so it's not meaningful
@@ -1184,6 +1332,7 @@ Beat my grade? 👊`;
     gridEl.innerHTML=rows.reverse().map(r=>r.join('')).join('<br>');
   }
 
+  haptic('win');soundWin();
   document.getElementById('win').classList.add('show');
   }catch(e){
     console.error('showWin error:',e);
@@ -1192,20 +1341,7 @@ Beat my grade? 👊`;
   }
 }
 
-document.getElementById('share-btn').addEventListener('click',()=>{
-  const text=document.getElementById('wshare-text').textContent;
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(text).then(()=>toast('Copied to clipboard!','ok'));
-  } else {
-    // Fallback: select the text
-    const el=document.getElementById('wshare-text');
-    const range=document.createRange();
-    range.selectNodeContents(el);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    toast('Select and copy the text above','info');
-  }
-});
+// share text copied via challenge button
 
 let toastT;
 function toast(msg,type){
@@ -1220,33 +1356,16 @@ document.getElementById('btn-nat').addEventListener('click',doNat);
 document.getElementById('btn-init').addEventListener('click',doInit);
 document.getElementById('reveal-one-btn').addEventListener('click',revealOne);
 
-// Reveal: two-tap pattern since confirm() blocked in iframes
-let revealArmed=false,revealTimer=null;
-document.getElementById('reveal-btn').addEventListener('click',()=>{
-  if(S.done)return;
-  if(!revealArmed){
-    revealArmed=true;
-    document.getElementById('reveal-btn').textContent='⚠️ Tap again to confirm — score goes to 0';
-    revealTimer=setTimeout(()=>{
-      revealArmed=false;
-      document.getElementById('reveal-btn').textContent='👁 Reveal All Names (score resets to 0)';
-    },3000);
-  } else {
-    clearTimeout(revealTimer);
-    revealArmed=false;
-    document.getElementById('reveal-btn').textContent='👁 Reveal All Names (score resets to 0)';
-    revealAll();
-  }
-});
+// Reveal All removed — players use individual reveal instead
 
 document.getElementById('again-btn').addEventListener('click',showPicker);
 
 // ── PUZZLE PICKER ──
 const COMP_ICONS = {
-  'Champions League':'⭐','Premier League':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','European Championship':'🌍',
-  'World Cup':'🌎','La Liga':'🇪🇸','First Division':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Championship':'🏴󠁧󠁢󠁥󠁮󠁧󠁿'
+  'Champions League':'⭐','Premier League':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','International':'🌍',
+  'La Liga':'🇪🇸','First Division':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Championship':'🏴󠁧󠁢󠁥󠁮󠁧󠁿'
 };
-const COMP_ORDER = ['Champions League','Premier League','First Division','Championship','European Championship','World Cup','La Liga'];
+const COMP_ORDER = ['Champions League','Premier League','First Division','Championship','International','La Liga'];
 
 function showPicker(){
   clearInterval(scoreTimer);
@@ -1287,7 +1406,7 @@ function buildPickerList(){
         <div class="pcard-badge" style="overflow:hidden">${teamEmoji(p.team)}</div>
         <div class="pcard-info">
           <div class="pcard-team">${p.team} <span style="color:var(--muted);font-weight:600">'${String(p.year).slice(2)}</span></div>
-          <div class="pcard-meta">${fmt} &nbsp;·&nbsp; ${p.year}</div>
+          <div class="pcard-meta">${fmt} &nbsp;·&nbsp; ${p.year} &nbsp;·&nbsp; ${"⭐".repeat(p.difficulty||3)}</div>
           <div class="pcard-match">${p.match}</div>
         </div>
         <div class="pcard-arrow">›</div>`;
@@ -1305,7 +1424,7 @@ const TEAM_COLOURS={
   'Arsenal':'🔴','Liverpool':'🔴','Manchester United':'🔴',
   'Chelsea':'🔵','Manchester City':'🩵','Leicester City':'🔵',
   'Leeds United':'💛','Barcelona':'🔵','Real Madrid':'⚪',
-  'AC Milan':'🔴','Blackburn Rovers':'🔵',
+  'AC Milan':'🔴','Blackburn Rovers':'🔵','Italy':'🔵','Brazil':'💛',
 };
 function teamEmoji(team){
   if(TEAM_FLAGS[team]){
@@ -1319,6 +1438,13 @@ function teamEmoji(team){
 }
 
 document.getElementById('back-btn').addEventListener('click', showPicker);
+document.getElementById('picker-share').addEventListener('click',()=>{
+  const url=window.location.href.split('?')[0];
+  const text='⚽ Lineup Legends — can you guess the famous football lineups?\nHow good is your football knowledge?\n'+url;
+  if(navigator.share){navigator.share({title:'Lineup Legends',text,url}).catch(()=>{});}
+  else if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>toast('Link copied!','ok'));}
+});
+
 document.getElementById('picker-random').addEventListener('click', () => {
   const p = PUZZLES[Math.floor(Math.random()*PUZZLES.length)];
   hidePicker(); init(p);
@@ -1380,10 +1506,10 @@ async function openLeaderboard(){
 
   try{
     lbData=await sbFetch('/rest/v1/scores?select=*&order=score.desc&limit=500');
-    lbMode='overall';
-    document.getElementById('tab-overall').classList.add('active');
-    document.getElementById('tab-lineup').classList.remove('active');
-    renderOverall();
+    lbMode='lineup';
+    document.getElementById('tab-lineup').classList.add('active');
+    document.getElementById('tab-overall').classList.remove('active');
+    showLineupTabs();
   }catch(e){
     console.error('Leaderboard error:',e);
     document.getElementById('lb-list').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:0.82rem;line-height:1.5">Could not load scores — check connection</div>';
@@ -1486,8 +1612,105 @@ document.getElementById('wname-input').addEventListener('keydown',e=>{if(e.key==
 document.getElementById('view-lb-btn').addEventListener('click',openLeaderboard);
 document.getElementById('lb-close').addEventListener('click',()=>document.getElementById('lb-overlay').classList.remove('show'));
 
-// Show picker on load
-showPicker();
+// ── CHALLENGE LINK ──
+function buildChallengeUrl(){
+  const name=document.getElementById('wname-input').value.trim()||'Someone';
+  const grade=getGrade(S.score);
+  const params=new URLSearchParams({c:S.puzzle.id,s:S.score,g:grade.letter,n:name});
+  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+}
+
+function generateChallenge(){
+  const url=buildChallengeUrl();
+  const grade=getGrade(S.score);
+  const name=document.getElementById('wname-input').value.trim()||'Someone';
+  const shareText=
+`⚔️ Lineup Legends Challenge!
+${name} scored ${S.score.toLocaleString()} pts — Grade ${grade.letter} on ${S.puzzle.team} ${S.puzzle.year}.
+Can you beat it? 👇
+${url}`;
+
+  // Use native share sheet if available (iOS/Android)
+  if(navigator.share){
+    navigator.share({
+      title:'Lineup Legends Challenge',
+      text:shareText,
+    }).catch(()=>{});
+  } else {
+    // Fallback: copy to clipboard
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(shareText).then(()=>{
+        const btn=document.getElementById('challenge-btn');
+        btn.textContent='✓ Copied!';
+        setTimeout(()=>btn.textContent='⚔️ Challenge',2500);
+        toast('Challenge copied!','ok');
+      });
+    }
+  }
+}
+
+function checkChallengeParam(){
+  const p=new URLSearchParams(window.location.search);
+  const cId=p.get('c'),cScore=p.get('s'),cGrade=p.get('g'),cName=p.get('n');
+  if(!cId||!cScore)return null;
+  return {puzzleId:parseInt(cId),score:parseInt(cScore),grade:cGrade,name:decodeURIComponent(cName||'Someone')};
+}
+
+function showChallengeBanner(challenge){
+  const banner=document.getElementById('challenge-banner');
+  if(!banner)return;
+  document.getElementById('cb-name').textContent=`⚔️ ${challenge.name} scored ${challenge.score.toLocaleString()} pts (Grade ${challenge.grade}) — beat it!`;
+  document.getElementById('cb-score').textContent=`${S.puzzle.team} ${S.puzzle.year}`;
+  banner.style.display='block';
+}
+
+function checkChallengeWin(finalScore,challenge){
+  if(!challenge)return null;
+  const won=finalScore>challenge.score;
+  const diff=Math.abs(finalScore-challenge.score);
+  return won
+    ?`🎉 You beat ${challenge.name}! +${diff.toLocaleString()} pts`
+    :`😬 ${challenge.name} beat you by ${diff.toLocaleString()} pts — challenge back?`;
+}
+
+document.getElementById('challenge-btn').addEventListener('click',generateChallenge);
+
+// ── HAPTICS & SOUND ──
+function haptic(type){
+  if(navigator.vibrate){
+    if(type==='correct') navigator.vibrate([30,10,30]);
+    else if(type==='wrong') navigator.vibrate(50);
+    else if(type==='win') navigator.vibrate([50,30,50,30,100]);
+    else if(type==='hint') navigator.vibrate(20);
+  }
+}
+
+let audioCtx=null;
+function playTone(freq,dur,type='sine',vol=0.12){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(vol,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+    o.start();o.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+function soundCorrect(){playTone(523,0.1);setTimeout(()=>playTone(659,0.1),90);setTimeout(()=>playTone(784,0.18),180);}
+function soundWrong(){playTone(180,0.12,'sawtooth',0.06);}
+function soundWin(){[523,587,659,698,784,880].forEach((f,i)=>setTimeout(()=>playTone(f,0.18),i*70));}
+function soundHint(){playTone(440,0.08,'sine',0.06);}
+
+// On load — check for challenge link, else show picker
+const challengeParam=checkChallengeParam();
+if(challengeParam){
+  const puzzle=PUZZLES.find(p=>p.id===challengeParam.puzzleId);
+  if(puzzle){hidePicker();init(puzzle);setTimeout(()=>showChallengeBanner(challengeParam),200);}
+  else showPicker();
+} else {
+  showPicker();
+}
 </script>
 </body>
 </html>
