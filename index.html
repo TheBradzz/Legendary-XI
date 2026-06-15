@@ -456,25 +456,8 @@ header{
 
 <div id="win">
   <div class="wcard">
-    <!-- Step 1: Name entry — gates the results -->
-    <div id="wname-screen">
-      <div id="wgrade-letter-pre" style="font-family:var(--fh);font-size:3.5rem;font-weight:800;line-height:1;margin-bottom:4px">-</div>
-      <div id="wgrade-label-pre" style="font-family:var(--fh);font-size:1rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">-</div>
-      <div id="wsub-pre" style="font-size:0.72rem;color:var(--muted);margin-bottom:4px"></div>
-      <div id="wfinal-score-pre" style="font-family:var(--fh);font-size:2.8rem;font-weight:800;color:var(--lime);line-height:1;margin-bottom:2px">-</div>
-      <div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">pts / 1,100</div>
-      <div id="wt-pre" style="font-size:0.82rem;color:var(--muted);margin-bottom:20px">⏱ -</div>
-      <div style="font-family:var(--fh);font-size:0.95rem;font-weight:700;color:var(--white);margin-bottom:12px">Who are you? Add your name to save your score and trash talk your mates 👊</div>
-      <div id="wname-row">
-        <input id="wname-input" type="text" placeholder="Your name…" maxlength="20"
-          autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"/>
-        <button class="wbtn wbtn-submit" id="submit-score-btn">Let's go →</button>
-      </div>
-      <div id="wsubmit-msg"></div>
-      <button id="skip-name-btn" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;margin-top:10px;text-decoration:underline">Skip (anonymous)</button>
-    </div>
-    <!-- Step 2: Full results — shown after name entry -->
-    <div id="wresults-screen" style="display:none">
+    <!-- Results — shown immediately -->
+    <div id="wresults-screen">
       <div class="wgrade-block">
         <div class="wgrade-letter" id="wgrade-letter">-</div>
         <div class="wgrade-label" id="wgrade-label">-</div>
@@ -485,15 +468,27 @@ header{
         <div class="wscore-lbl">pts / 1,100</div>
       </div>
       <div id="wgrid-display"></div>
-      <div id="wgrid-legend"><span>🟩 Clean</span><span>🟨 Hints</span><span>🟥 Revealed</span></div>
       <div class="wstats-row"><div class="wstat-pill" id="wt">⏱ -</div></div>
       <div class="wpenalty-row" id="wpenalty-row"></div>
       <div class="wshare" id="wshare-text"></div>
       <div class="wbtns">
-        <button class="wbtn wbtn-challenge" id="challenge-btn">⚔️ Challenge</button>
+        <button class="wbtn wbtn-challenge" id="challenge-btn">📤 Share</button>
         <button class="wbtn wbtn-lb" id="view-lb-btn">🏅 Board</button>
         <button class="wbtn wbtn-play" id="again-btn">▶ Play</button>
       </div>
+    </div>
+    <!-- Name entry — appears when Share tapped -->
+    <div id="wname-screen" style="display:none">
+      <div style="font-family:var(--fh);font-size:1.1rem;font-weight:800;color:var(--white);margin-bottom:6px">Save &amp; challenge your mates 👊</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:16px">Your name goes on the group leaderboard</div>
+      <div id="wname-row">
+        <input id="wname-input" type="text" placeholder="Your name…" maxlength="20"
+          autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"/>
+        <button class="wbtn wbtn-submit" id="submit-score-btn">Go →</button>
+      </div>
+      <div id="wsubmit-msg"></div>
+      <button id="skip-name-btn" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;margin-top:10px;text-decoration:underline">Share anonymously</button>
+      <button id="back-to-results-btn" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;margin-top:6px;display:block;width:100%">← Back to results</button>
     </div>
   </div>
 </div>
@@ -1329,7 +1324,7 @@ ${S.puzzle.team} ${S.puzzle.year} (${fmt})
 
 ${flatGrid}
 
-Clues: ${totalHints}  ·  Time: ${timeStr}  ·  Grade: ${grade.letter}
+Grade ${grade.letter} · ${finalScore.toLocaleString()}pts · ${timeStr}
 
 lineuplegends.netlify.app`;
 
@@ -1371,21 +1366,13 @@ lineuplegends.netlify.app`;
   }
 
   // Populate name screen preview
-  const glPre=document.getElementById('wgrade-letter-pre');
   if(glPre){glPre.textContent=grade.letter;glPre.style.color=grade.color;}
-  const el2=document.getElementById('wgrade-label-pre');if(el2)el2.textContent=grade.label;
-  const el3=document.getElementById('wsub-pre');if(el3)el3.textContent=`${S.puzzle.team} · ${S.puzzle.year}`;
-  const el4=document.getElementById('wfinal-score-pre');if(el4)el4.textContent=finalScore.toLocaleString();
-  const el5=document.getElementById('wt-pre');if(el5)el5.textContent=`⏱ ${timeStr}`;
-  // Reset screens
-  const ns=document.getElementById('wname-screen');
-  const rs=document.getElementById('wresults-screen');
-  if(ns)ns.style.display='block';
-  if(rs)rs.style.display='none';
-  // Clear previous name entry state
+  // Show results immediately
+  const rs=document.getElementById('wresults-screen');const ns=document.getElementById('wname-screen');
+  if(rs)rs.style.display='block';if(ns)ns.style.display='none';
   const ni=document.getElementById('wname-input');if(ni){ni.value='';ni.disabled=false;}
   const sm=document.getElementById('wsubmit-msg');if(sm)sm.textContent='';
-  const sb=document.getElementById('submit-score-btn');if(sb){sb.disabled=false;sb.textContent="Let's go →";}
+  const sb=document.getElementById('submit-score-btn');if(sb){sb.disabled=false;sb.textContent='Go →';}
   haptic('win');soundWin();
   document.getElementById('win').classList.add('show');
   }catch(e){
@@ -1529,12 +1516,14 @@ async function submitScore(){
       group_id:S.groupId||null
     });
   }catch(e){console.error('Submit:',e);}
-  showResultsScreen();
+  S.playerName=name;
+  document.getElementById('wname-screen').style.display='none';
+  document.getElementById('wresults-screen').style.display='block';
+  generateChallenge();
 }
 
-document.getElementById('skip-name-btn').addEventListener('click',()=>{
-  S.playerName='';showResultsScreen();
-});
+document.getElementById('skip-name-btn').addEventListener('click',()=>{S.playerName='';document.getElementById('wname-screen').style.display='none';document.getElementById('wresults-screen').style.display='block';generateChallenge();});
+document.getElementById('back-to-results-btn').addEventListener('click',()=>{document.getElementById('wname-screen').style.display='none';document.getElementById('wresults-screen').style.display='block';});
 
 // ── LEADERBOARD (Supabase) ──
 const SB_URL='https://ecjrsjxvdtmvtgygnwxd.supabase.co';
@@ -1774,29 +1763,39 @@ function buildChallengeUrl(){
 function generateChallenge(){
   const url=buildChallengeUrl();
   const grade=getGrade(S.score);
-  const name=document.getElementById('wname-input').value.trim()||'Someone';
-  const shareText=
-`⚔️ Lineup Legends Challenge!
-${name} scored ${S.score.toLocaleString()} pts — Grade ${grade.letter} on ${S.puzzle.team} ${S.puzzle.year}.
-Can you beat it? 👇
-${url}`;
+  const name=S.playerName||document.getElementById('wname-input').value.trim()||null;
+  const elapsed=Math.round((Date.now()-S.start)/1000);
+  const mins=Math.floor(elapsed/60),secs=elapsed%60;
+  const tStr=mins>0?`${mins}m ${secs}s`:`${elapsed}s`;
+  const stars='⭐'.repeat(S.puzzle.difficulty||3);
+  const challenger=name||'Someone';
+  const flatGrid=S.puzzle.players.map((_,i)=>{
+    if(S.revealedPlayers&&S.revealedPlayers.has(i))return'🟥';
+    return(S.natDone.has(i)||(S.lettersRevealed.get(i)||0)>0)?'🟨':'🟩';
+  }).join('');
+  const trashLines=[
+    `${challenger} just did ${S.puzzle.team} ${S.puzzle.year} in ${tStr} — Grade ${grade.letter}. Think you can do better? 😂`,
+    `${challenger} got Grade ${grade.letter} on ${S.puzzle.team} ${S.puzzle.year} in ${tStr}. Don't embarrass yourself 👀`,
+    `Grade ${grade.letter}. ${S.score.toLocaleString()}pts. ${tStr}. ${challenger} is waiting... 😤`,
+    `${challenger} completed ${S.puzzle.team} ${S.puzzle.year} ${stars} in ${tStr}. Your move 👊`,
+    `${S.score.toLocaleString()}pts in ${tStr} from ${challenger}. Can you beat Grade ${grade.letter}? 🔥`,
+  ];
+  const trash=trashLines[Math.floor(Math.random()*trashLines.length)];
+  const shareText=`⚽ Lineup Legends #${S.puzzle.id}
+${S.puzzle.team} ${S.puzzle.year} ${stars}
 
-  // Use native share sheet if available (iOS/Android)
+${flatGrid}
+
+"${gradeQuote}"
+
+${trash}
+
+👥 Group scores:
+${url}`;
   if(navigator.share){
-    navigator.share({
-      title:'Lineup Legends Challenge',
-      text:shareText,
-    }).catch(()=>{});
-  } else {
-    // Fallback: copy to clipboard
-    if(navigator.clipboard){
-      navigator.clipboard.writeText(shareText).then(()=>{
-        const btn=document.getElementById('challenge-btn');
-        btn.textContent='✓ Copied!';
-        setTimeout(()=>btn.textContent='⚔️ Challenge',2500);
-        toast('Challenge copied!','ok');
-      });
-    }
+    navigator.share({title:'Lineup Legends Challenge',text:shareText}).catch(()=>{});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(shareText).then(()=>toast('Copied!','ok'));
   }
 }
 
@@ -1832,7 +1831,7 @@ function checkChallengeWin(finalScore,elapsed,challenge){
   return `😬 ${challenge.name} beats you by ${Math.abs(scoreDiff)} pts — ${cT?cT+' vs your '+myT+'.':''} Challenge back?`;
 }
 
-document.getElementById('challenge-btn').addEventListener('click',generateChallenge);
+document.getElementById('challenge-btn').addEventListener('click',()=>{document.getElementById('wresults-screen').style.display='none';document.getElementById('wname-screen').style.display='block';setTimeout(()=>document.getElementById('wname-input').focus(),150);});
 
 // ── HAPTICS & SOUND ──
 function haptic(type){
