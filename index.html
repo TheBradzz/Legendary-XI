@@ -332,7 +332,12 @@ header{
 #lb-title{font-family:var(--fh);font-size:1.4rem;font-weight:800;color:rgba(255,210,80,0.95)}
 #lb-close{background:rgba(255,255,255,0.08);border:none;color:var(--white);border-radius:50%;width:30px;height:30px;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
 /* Puzzle filter tabs */
-#lb-tabs{display:flex;gap:6px;padding:10px 12px 8px;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+/* Mode tabs */
+#lb-mode-tabs{display:flex;gap:0;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.08)}
+.lb-mode-tab{flex:1;background:none;border:none;color:var(--muted);font-family:var(--fh);font-size:0.82rem;font-weight:700;padding:10px;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s}
+.lb-mode-tab.active{color:rgba(255,210,80,0.95);border-bottom-color:rgba(255,210,80,0.95)}
+/* Lineup filter tabs */
+#lb-tabs{display:flex;gap:6px;padding:8px 12px 6px;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
 #lb-tabs::-webkit-scrollbar{display:none}
 .lb-tab{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:20px;color:var(--muted);font-family:var(--fb);font-size:0.68rem;font-weight:600;padding:4px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .lb-tab.active{background:rgba(255,180,0,0.15);border-color:rgba(255,180,0,0.4);color:rgba(255,210,80,0.95)}
@@ -358,7 +363,7 @@ header{
 #picker-tagline{font-size:0.7rem;color:var(--muted);margin-top:2px}
 #picker-random{background:var(--lime);color:#0a1a08;border:none;border-radius:10px;padding:8px 14px;font-family:var(--fh);font-weight:800;font-size:0.88rem;cursor:pointer;white-space:nowrap}
 #picker-random:active{background:var(--lime2)}
-#picker-scroll{flex:1;overflow-y:auto;padding:10px 12px 20px}
+#picker-scroll{flex:1;overflow-y:auto;padding:10px 12px 20px;min-height:200px}
 .picker-group{margin-bottom:18px}
 .picker-group-title{font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:2px}
 .pcard{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.15s,border-color 0.15s}
@@ -380,7 +385,7 @@ header{
     </div>
     <button id="picker-random">🎲 Random</button>
   </div>
-  <div id="picker-scroll" id="picker-list"></div>
+  <div id="picker-scroll"></div>
 </div>
 
 <div id="app">
@@ -473,7 +478,12 @@ header{
       <div id="lb-title">🏅 Leaderboard</div>
       <button id="lb-close">✕</button>
     </div>
-    <!-- Puzzle filter tabs -->
+    <!-- Mode tabs: Overall vs Per Lineup -->
+    <div id="lb-mode-tabs">
+      <button class="lb-mode-tab active" id="tab-overall">🌍 Overall</button>
+      <button class="lb-mode-tab" id="tab-lineup">⚽ By Lineup</button>
+    </div>
+    <!-- Lineup filter tabs (hidden in overall mode) -->
     <div id="lb-tabs"></div>
     <div id="lb-list"></div>
     <div id="lb-empty">No scores yet — be the first!</div>
@@ -1234,9 +1244,9 @@ document.getElementById('again-btn').addEventListener('click',showPicker);
 // ── PUZZLE PICKER ──
 const COMP_ICONS = {
   'Champions League':'⭐','Premier League':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','European Championship':'🌍',
-  'World Cup':'🌎','La Liga':'🇪🇸','La Liga':'🇪🇸'
+  'World Cup':'🌎','La Liga':'🇪🇸','First Division':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Championship':'🏴󠁧󠁢󠁥󠁮󠁧󠁿'
 };
-const COMP_ORDER = ['Champions League','Premier League','European Championship','World Cup','La Liga'];
+const COMP_ORDER = ['Champions League','Premier League','First Division','Championship','European Championship','World Cup','La Liga'];
 
 function showPicker(){
   clearInterval(scoreTimer);
@@ -1274,7 +1284,7 @@ function buildPickerList(){
       const card = document.createElement('div');
       card.className = 'pcard';
       card.innerHTML = `
-        <div class="pcard-badge">${teamEmoji(p.team)}</div>
+        <div class="pcard-badge" style="overflow:hidden">${teamEmoji(p.team)}</div>
         <div class="pcard-info">
           <div class="pcard-team">${p.team} <span style="color:var(--muted);font-weight:600">'${String(p.year).slice(2)}</span></div>
           <div class="pcard-meta">${fmt} &nbsp;·&nbsp; ${p.year}</div>
@@ -1288,14 +1298,24 @@ function buildPickerList(){
   });
 }
 
+const TEAM_FLAGS={
+  'England':'gb-eng','France':'fr','Germany':'de','Spain':'es',
+};
+const TEAM_COLOURS={
+  'Arsenal':'🔴','Liverpool':'🔴','Manchester United':'🔴',
+  'Chelsea':'🔵','Manchester City':'🩵','Leicester City':'🔵',
+  'Leeds United':'💛','Barcelona':'🔵','Real Madrid':'⚪',
+  'AC Milan':'🔴','Blackburn Rovers':'🔵',
+};
 function teamEmoji(team){
-  const map = {
-    'Arsenal':'🔴','Liverpool':'🔴','Manchester United':'🔴',
-    'Chelsea':'🔵','Manchester City':'🔵','Leicester City':'🔵',
-    'Leeds United':'💛','Barcelona':'🔵','Real Madrid':'⚪',
-    'AC Milan':'🔴','Bayern Munich':'🔴','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-  };
-  return map[team] || '⚽';
+  if(TEAM_FLAGS[team]){
+    const code=TEAM_FLAGS[team];
+    return `<img src="https://flagcdn.com/w40/${code}.png"
+      style="width:36px;height:auto;border-radius:3px;display:block"
+      onerror="this.outerHTML='⚽'"
+      alt="${team} flag">`;
+  }
+  return TEAM_COLOURS[team]||'⚽';
 }
 
 document.getElementById('back-btn').addEventListener('click', showPicker);
@@ -1347,41 +1367,67 @@ async function submitScore(){
   }
 }
 
+let lbData=[], lbMode='overall';
+
 async function openLeaderboard(){
   const overlay=document.getElementById('lb-overlay');
   overlay.classList.add('show');
   document.getElementById('lb-list').innerHTML='';
   document.getElementById('lb-empty').style.display='none';
-  document.getElementById('lb-tabs').innerHTML='<span style="color:var(--muted);font-size:0.75rem;padding:4px 8px">Loading…</span>';
+  document.getElementById('lb-tabs').innerHTML='';
+  document.getElementById('lb-tabs').style.display='none';
+  document.getElementById('lb-list').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Loading…</div>';
+
   try{
-    const data=await sbFetch('/rest/v1/scores?select=*&order=score.desc&limit=200');
-    const puzzleMap=new Map();
-    data.forEach(e=>{if(!puzzleMap.has(e.puzzle_id))puzzleMap.set(e.puzzle_id,e.puzzle_label);});
-    const tabsEl=document.getElementById('lb-tabs');
-    tabsEl.innerHTML='';
-    const mkTab=(label,pid)=>{
-      const t=document.createElement('button');
-      t.className='lb-tab';t.textContent=label;
-      t.onclick=()=>{tabsEl.querySelectorAll('.lb-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');renderLbList(data,pid);};
-      tabsEl.appendChild(t);return t;
-    };
-    mkTab('All',null).classList.add('active');
-    [...puzzleMap.entries()].sort((a,b)=>a[0]-b[0]).forEach(([pid,label])=>mkTab(label,pid));
-    const curTab=[...tabsEl.querySelectorAll('.lb-tab')].find(t=>t.textContent===`${S.puzzle.team} ${S.puzzle.year}`);
-    if(curTab&&data.some(e=>e.puzzle_id===S.puzzle.id)){curTab.click();}
-    else renderLbList(data,null);
+    lbData=await sbFetch('/rest/v1/scores?select=*&order=score.desc&limit=500');
+    lbMode='overall';
+    document.getElementById('tab-overall').classList.add('active');
+    document.getElementById('tab-lineup').classList.remove('active');
+    renderOverall();
   }catch(e){
     console.error('Leaderboard error:',e);
     document.getElementById('lb-list').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:0.82rem;line-height:1.5">Could not load scores — check connection</div>';
-    document.getElementById('lb-tabs').innerHTML='';
   }
 }
 
-function renderLbList(data,puzzleId){
-  const filtered=puzzleId!==null?data.filter(e=>e.puzzle_id===puzzleId):data;
+// Overall leaderboard — ranked by total cumulative score across all games
+function renderOverall(){
+  document.getElementById('lb-tabs').style.display='none';
+  const totals=new Map();
+  lbData.forEach(e=>{
+    if(!totals.has(e.name)) totals.set(e.name,{name:e.name,total:0,games:0,bestGrade:'F',grades:[]});
+    const t=totals.get(e.name);
+    // Only count best score per puzzle per person
+    const key=`${e.name}:${e.puzzle_id}`;
+    if(!t._best) t._best=new Map();
+    if(!t._best.has(e.puzzle_id)||e.score>t._best.get(e.puzzle_id)){
+      if(t._best.has(e.puzzle_id)) t.total-=t._best.get(e.puzzle_id);
+      t._best.set(e.puzzle_id,e.score);
+      t.total+=e.score;
+      t.games=t._best.size;
+    }
+    t.grades.push(e.grade);
+  });
+  const sorted=[...totals.values()].sort((a,b)=>b.total-a.total).slice(0,25);
+  renderRows(sorted, e=>`${e.games} lineup${e.games!==1?'s':''} played`, e=>e.total.toLocaleString()+' total');
+}
+
+// Per lineup leaderboard — best score per person per puzzle
+function renderByLineup(puzzleId){
+  const filtered=puzzleId?lbData.filter(e=>e.puzzle_id===puzzleId):lbData;
   const best=new Map();
-  filtered.forEach(e=>{const k=`${e.name}:${e.puzzle_id}`;if(!best.has(k)||e.score>best.get(k).score)best.set(k,e);});
+  filtered.forEach(e=>{
+    const k=`${e.name}:${e.puzzle_id}`;
+    if(!best.has(k)||e.score>best.get(k).score) best.set(k,e);
+  });
   const sorted=[...best.values()].sort((a,b)=>b.score-a.score).slice(0,25);
+  renderRows(sorted,
+    e=>{const m=Math.floor(e.time_seconds/60),s=e.time_seconds%60;return (m>0?`${m}m ${s}s`:`${s}s`)+` · Grade ${e.grade}`;},
+    e=>e.score.toLocaleString()
+  );
+}
+
+function renderRows(sorted, metaFn, scoreFn){
   const list=document.getElementById('lb-list');
   const empty=document.getElementById('lb-empty');
   list.innerHTML='';
@@ -1391,19 +1437,49 @@ function renderLbList(data,puzzleId){
   sorted.forEach((e,idx)=>{
     const row=document.createElement('div');
     row.className='lb-row';
-    const mins=Math.floor(e.time_seconds/60),secs=e.time_seconds%60;
-    const timeStr=mins>0?`${mins}m ${secs}s`:`${secs}s`;
-    const showPuzzle=puzzleId===null?`${e.puzzle_label} · `:'';
     row.innerHTML=`
       <div class="lb-rank">${medals[idx]||idx+1}</div>
       <div class="lb-info">
         <div class="lb-name">${e.name}</div>
-        <div class="lb-meta">${showPuzzle}${timeStr} · Grade ${e.grade}</div>
+        <div class="lb-meta">${metaFn(e)}</div>
       </div>
-      <div class="lb-score">${e.score.toLocaleString()}</div>`;
+      <div class="lb-score">${scoreFn(e)}</div>`;
     list.appendChild(row);
   });
 }
+
+function showLineupTabs(){
+  const tabsEl=document.getElementById('lb-tabs');
+  tabsEl.style.display='flex';
+  tabsEl.innerHTML='';
+  const puzzleMap=new Map();
+  lbData.forEach(e=>{if(!puzzleMap.has(e.puzzle_id))puzzleMap.set(e.puzzle_id,e.puzzle_label);});
+  const mkTab=(label,pid)=>{
+    const t=document.createElement('button');
+    t.className='lb-tab';t.textContent=label;
+    t.onclick=()=>{tabsEl.querySelectorAll('.lb-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');renderByLineup(pid);};
+    tabsEl.appendChild(t);return t;
+  };
+  mkTab('All',null).classList.add('active');
+  [...puzzleMap.entries()].sort((a,b)=>a[0]-b[0]).forEach(([pid,label])=>mkTab(label,pid));
+  // Jump to current puzzle if it has scores
+  const curTab=[...tabsEl.querySelectorAll('.lb-tab')].find(t=>S.puzzle&&t.textContent===`${S.puzzle.team} ${S.puzzle.year}`);
+  if(curTab&&lbData.some(e=>e.puzzle_id===S.puzzle.id))curTab.click();
+  else renderByLineup(null);
+}
+
+document.getElementById('tab-overall').addEventListener('click',()=>{
+  lbMode='overall';
+  document.getElementById('tab-overall').classList.add('active');
+  document.getElementById('tab-lineup').classList.remove('active');
+  renderOverall();
+});
+document.getElementById('tab-lineup').addEventListener('click',()=>{
+  lbMode='lineup';
+  document.getElementById('tab-lineup').classList.add('active');
+  document.getElementById('tab-overall').classList.remove('active');
+  showLineupTabs();
+});
 
 document.getElementById('submit-score-btn').addEventListener('click',submitScore);
 document.getElementById('wname-input').addEventListener('keydown',e=>{if(e.key==='Enter')submitScore();});
