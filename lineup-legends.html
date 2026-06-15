@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lineup Legends</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D1B2A;--pitch:#0e3d1f;--lime:#B5FF4D;--lime2:#8de020;
+  --white:#F0F4F8;--muted:#6b8caa;--wrong:#ff5c5c;
+  --fh:'Barlow Condensed',sans-serif;--fb:'Inter',sans-serif;
+}
+html,body{
+  height:100%;
+  background:var(--navy);
+  color:var(--white);
+  font-family:var(--fb);
+  -webkit-tap-highlight-color:transparent;
+}
+
+#app{
+  display:flex;
+  flex-direction:column;
+  min-height:100dvh;
+  /* On mobile: full width. On desktop: cap at 430px and centre */
+  width:100%;
+  max-width:430px;
+  margin:0 auto;
+  padding-bottom:env(safe-area-inset-bottom,12px);
+  background:var(--navy);
+}
+
+/* Pitch fills 100% of #app width — no padding on pitch-wrap */
+
+/* ── TOP CHROME ── */
+
+/* Row 1: Logo + back button */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px 8px;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.logo{font-family:var(--fh);font-weight:800;font-size:1.5rem;line-height:1}
+.logo span{color:var(--lime)}
+#back-btn{
+  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
+  border-radius:8px;color:var(--muted);font-family:var(--fb);font-size:0.72rem;
+  font-weight:600;padding:5px 11px;cursor:pointer;
+}
+#back-btn:active{background:rgba(255,255,255,0.14)}
+
+/* Row 2: Score (hero) + puzzle info side by side */
+#scorebar{
+  display:flex;align-items:center;gap:12px;
+  padding:8px 12px 7px;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+#score-block{
+  display:flex;flex-direction:column;align-items:flex-start;
+  flex-shrink:0;
+  border-right:1px solid rgba(255,255,255,0.08);
+  padding-right:12px;
+}
+#score-num{
+  font-family:var(--fh);font-size:3rem;font-weight:800;
+  line-height:1;color:var(--lime);
+  transition:color 0.3s;
+}
+#score-num.hit{color:var(--wrong)}
+#score-lbl{font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;font-weight:700;margin-top:1px}
+#score-meta{flex:1;min-width:0}
+#ptitle{font-family:var(--fh);font-weight:700;font-size:1rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hcomp{font-size:0.6rem;color:var(--muted);font-weight:500;letter-spacing:0.2px;margin-top:3px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#hints-used{font-size:0.62rem;color:var(--muted);font-weight:500;margin-top:1px}
+
+/* Row 3: Progress bar only — no text label */
+#prog-wrap{padding:0}
+#prog-track{height:4px;background:rgba(255,255,255,0.1);overflow:hidden}
+#prog-fill{height:100%;background:var(--lime);border-radius:0;width:0%;transition:width 0.5s cubic-bezier(.22,.68,0,1.2)}
+
+/* Pitch fills 100% of #app width — no padding on pitch-wrap */
+#pitch-wrap{padding:3px 0 2px;display:flex;justify-content:center}
+#pitch{
+  position:relative;
+  width:100%;
+  /* Cap height so pitch doesn't dominate on tall phones */
+  max-height:calc(100dvh - 230px);
+  aspect-ratio:68/105;
+  overflow:visible;
+  flex-shrink:0;
+}
+#pitch-bg{
+  position:absolute;inset:0;
+  background:var(--pitch);
+  overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,0.5);
+  z-index:0;
+}
+#pitch-bg::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 9%,rgba(0,0,0,0.09) 9%,rgba(0,0,0,0.09) 18%);
+}
+
+/* ── PLAYER DOT ──
+   .pdot is a flex column centred on its (left%, top%) coordinate.
+   .ring = the coloured circle with position label.
+   .tag  = small info area below the ring (always present, content grows with hints).
+
+   IMPORTANT: transform:translate(-50%, -50%) centres the entire column on the coordinate.
+   This means equal space above and below — which is fine because all y coords are
+   set so that even with the tag below, nothing clips the pitch edges.
+*/
+.pdot{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  z-index:3;
+  cursor:pointer;
+  gap:0;
+}
+.ring{
+  width:42px;height:42px;
+  border-radius:50%;
+  background:#1b6132;
+  border:2.5px solid rgba(255,255,255,0.85);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fh);font-weight:800;font-size:0.88rem;
+  color:#fff;
+  flex-shrink:0;
+  transition:background 0.25s,border-color 0.25s,box-shadow 0.25s;
+}
+.pdot.active .ring{border-color:var(--lime);box-shadow:0 0 0 3px rgba(181,255,77,0.4);}
+.pdot.solved .ring{background:var(--lime);border-color:var(--lime2);color:#0a2000;}
+
+/* Tag sits directly below the ring */
+.tag{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  background:rgba(10,20,15,0.88);
+  border-radius:4px;
+  padding:2px 6px;
+  margin-top:2px;
+  min-width:32px;
+  gap:0;
+}
+.tag-count{
+  font-family:var(--fh);font-size:0.72rem;font-weight:700;
+  color:rgba(255,255,255,0.75);line-height:1.2;white-space:nowrap;
+}
+.tag-name{
+  font-family:var(--fh);font-size:0.72rem;font-weight:800;
+  color:var(--lime);line-height:1.2;white-space:nowrap;display:none;
+}
+.tag-init{
+  font-family:monospace;font-size:0.68rem;font-weight:700;
+  color:var(--lime);line-height:1.2;white-space:nowrap;display:none;
+}
+.tag-clue{
+  font-family:var(--fb);font-size:0.58rem;font-weight:600;
+  color:rgba(255,255,255,0.85);line-height:1.2;white-space:nowrap;display:none;
+}
+
+/* ── ACTION BOX — combined player info + input, directly below pitch ── */
+#action-box{
+  margin:4px 10px 3px;
+  background:rgba(255,255,255,0.05);
+  border:1.5px solid rgba(255,255,255,0.12);
+  border-radius:12px;
+  overflow:hidden;
+}
+/* Top row: input + go */
+#input-row{
+  display:flex;
+  gap:0;
+}
+#guess-input{
+  flex:1;
+  background:transparent;
+  border:none;
+  color:var(--white);
+  font-family:var(--fb);
+  font-size:1rem;
+  font-weight:500;
+  padding:10px 12px;
+  outline:none;
+  -webkit-appearance:none;
+}
+#guess-input::placeholder{color:var(--muted)}
+#guess-input.shake{animation:shake 0.35s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+#action-box:focus-within{border-color:rgba(181,255,77,0.4);background:rgba(181,255,77,0.04)}
+#gobtn{
+  background:var(--lime);color:#0a1a08;border:none;
+  border-radius:0 10px 0 0;
+  padding:10px 18px;
+  font-family:var(--fh);font-weight:800;font-size:1.05rem;
+  cursor:pointer;white-space:nowrap;
+}
+#gobtn:active{background:var(--lime2)}
+
+/* Bottom row: selected player info */
+#sel-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:7px 12px;
+  border-top:1px solid rgba(255,255,255,0.08);
+  min-height:36px;
+}
+#sel-left{flex:1;min-width:0}
+#sel-info{font-family:var(--fh);font-size:1.05rem;font-weight:800;color:var(--white);line-height:1.2}
+#sel-info span{color:var(--lime);}
+#sel-sub{font-size:0.7rem;color:rgba(255,255,255,0.65);font-weight:500;margin-top:2px}
+#sel-right{flex-shrink:0;margin-left:8px}
+#sel-prompt{font-size:0.7rem;color:var(--muted);font-style:italic;text-align:right}
+#reveal-one-btn{
+  display:none;
+  background:rgba(255,180,0,0.12);
+  border:1px solid rgba(255,180,0,0.3);
+  border-radius:8px;
+  color:rgba(255,210,80,0.95);
+  font-family:var(--fb);
+  font-size:0.72rem;
+  font-weight:700;
+  padding:5px 10px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+#reveal-one-btn:active{background:rgba(255,180,0,0.22)}
+
+/* ── HINT BUTTONS — two equal columns ── */
+#hint-bar{padding:3px 10px 2px;display:flex;gap:7px}
+.hbtn{
+  flex:1;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:10px;
+  color:var(--white);
+  font-family:var(--fb);
+  font-size:0.76rem;
+  font-weight:600;
+  padding:8px 6px;
+  cursor:pointer;
+  text-align:center;
+  line-height:1.3;
+}
+.hbtn:active{background:rgba(255,255,255,0.14)}
+.hbtn:disabled{opacity:0.3;cursor:not-allowed}
+.hbtn .cost{display:block;font-size:0.62rem;color:var(--wrong);font-weight:700;margin-top:2px}
+/* Reveal all — full width below hints */
+#reveal-btn{
+  display:block;
+  width:calc(100% - 20px);
+  margin:4px 10px 4px;
+  background:rgba(255,80,80,0.1);
+  border:1px solid rgba(255,80,80,0.35);
+  border-radius:10px;
+  color:rgba(255,180,180,0.95);
+  font-family:var(--fb);
+  font-size:0.8rem;
+  font-weight:600;
+  padding:8px 6px;
+  cursor:pointer;
+  text-align:center;
+}
+#reveal-btn:active{background:rgba(255,80,80,0.22)}
+#wrong-count{font-size:0.7rem;color:var(--muted);font-weight:500;text-align:center;padding:2px 10px 4px;display:block}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--white);color:var(--navy);font-family:var(--fh);font-weight:700;font-size:0.95rem;padding:8px 18px;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,0.35);transition:transform 0.3s cubic-bezier(.22,.68,0,1.2);z-index:100;white-space:nowrap;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.ok{background:var(--lime);color:#0a1a08}
+#toast.bad{background:var(--wrong);color:#fff}
+#toast.info{background:#1e3a5f;color:#a8d4ff}
+#toast.warm{background:#ff9f1c;color:#1a0a00}
+
+/* ── WIN OVERLAY ── */
+#win{display:none;position:fixed;inset:0;background:rgba(13,27,42,0.96);z-index:50;align-items:center;justify-content:center;backdrop-filter:blur(8px);overflow-y:auto;padding:16px 0}
+#win.show{display:flex}
+.wcard{background:#0f1f33;border:1.5px solid rgba(181,255,77,0.25);border-radius:20px;padding:20px 18px 18px;text-align:center;max-width:380px;width:93%;box-shadow:0 0 60px rgba(181,255,77,0.12)}
+.wgrade-block{margin-bottom:8px}
+.wgrade-letter{font-family:var(--fh);font-size:5rem;font-weight:800;line-height:1;transition:color 0.3s}
+.wgrade-label{font-family:var(--fh);font-size:1.05rem;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.wsub{color:var(--muted);font-size:0.7rem;margin-bottom:8px;line-height:1.4}
+.wscore-block{margin-bottom:10px}
+.wscore-num{font-family:var(--fh);font-size:2.2rem;font-weight:800;color:var(--white);line-height:1}
+.wscore-lbl{font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-top:1px}
+.wstats-row{display:flex;justify-content:center;gap:8px;margin:10px 0 8px}
+.wstat-pill{background:rgba(255,255,255,0.07);border-radius:20px;padding:5px 12px;font-family:var(--fh);font-size:0.88rem;font-weight:700;color:var(--white)}
+.wstat-pill.bad{color:var(--wrong)}
+.wpenalty-row{font-size:0.65rem;color:var(--wrong);margin-bottom:8px;min-height:0;line-height:1.4}
+
+/* Wordle grid */
+#wgrid-display{text-align:center;font-size:1.6rem;letter-spacing:2px;margin-bottom:8px;line-height:1.4}
+#wgrid-legend{display:flex;justify-content:center;gap:14px;font-size:0.62rem;color:var(--muted);margin-bottom:10px;font-weight:500}
+#wgrid-legend span{display:flex;align-items:center;gap:3px}
+
+/* Share card */
+.wshare{display:none} /* hidden — only used for clipboard copy */
+
+.wbtns{display:flex;gap:7px;margin-top:2px}
+.wbtn{border:none;border-radius:10px;padding:10px 8px;font-family:var(--fh);font-weight:800;font-size:0.9rem;cursor:pointer;flex:1;text-align:center;line-height:1.2}
+.wbtn-share{background:rgba(255,255,255,0.1);color:var(--white);border:1px solid rgba(255,255,255,0.2)}
+.wbtn-share:active{background:rgba(255,255,255,0.18)}
+.wbtn-lb{background:rgba(255,180,0,0.12);color:rgba(255,210,80,0.95);border:1px solid rgba(255,180,0,0.3)}
+.wbtn-lb:active{background:rgba(255,180,0,0.22)}
+.wbtn-play{background:var(--lime);color:#0a1a08}
+.wbtn-play:active{background:var(--lime2)}
+.wbtn-submit{background:var(--lime);color:#0a1a08;border:none;border-radius:8px;padding:8px 14px;font-family:var(--fh);font-weight:800;font-size:0.88rem;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.wbtn-submit:active{background:var(--lime2)}
+.wbtn-submit:disabled{opacity:0.4;cursor:not-allowed}
+
+/* Name entry row */
+#wname-row{display:flex;gap:8px;margin-bottom:6px}
+#wname-input{flex:1;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.18);border-radius:8px;color:var(--white);font-family:var(--fb);font-size:0.9rem;padding:8px 10px;outline:none;-webkit-appearance:none}
+#wname-input:focus{border-color:var(--lime)}
+#wname-input::placeholder{color:var(--muted)}
+#wsubmit-msg{font-size:0.7rem;color:var(--lime);font-weight:600;min-height:1rem;margin-bottom:8px;text-align:center}
+
+/* Leaderboard overlay */
+#lb-overlay{display:none;position:fixed;inset:0;background:rgba(13,27,42,0.96);z-index:60;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+#lb-overlay.show{display:flex}
+#lb-card{background:#0f1f33;border:1.5px solid rgba(255,180,0,0.3);border-radius:20px;width:93%;max-width:380px;max-height:85dvh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 60px rgba(255,180,0,0.15)}
+#lb-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+#lb-title{font-family:var(--fh);font-size:1.4rem;font-weight:800;color:rgba(255,210,80,0.95)}
+#lb-close{background:rgba(255,255,255,0.08);border:none;color:var(--white);border-radius:50%;width:30px;height:30px;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+/* Puzzle filter tabs */
+#lb-tabs{display:flex;gap:6px;padding:10px 12px 8px;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+#lb-tabs::-webkit-scrollbar{display:none}
+.lb-tab{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:20px;color:var(--muted);font-family:var(--fb);font-size:0.68rem;font-weight:600;padding:4px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.lb-tab.active{background:rgba(255,180,0,0.15);border-color:rgba(255,180,0,0.4);color:rgba(255,210,80,0.95)}
+/* Score list */
+#lb-list{overflow-y:auto;flex:1;padding:0 12px 12px}
+#lb-empty{padding:30px;text-align:center;color:var(--muted);font-size:0.85rem;display:none}
+.lb-row{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,0.04)}
+.lb-row:first-child{background:rgba(255,180,0,0.1);border:1px solid rgba(255,180,0,0.25)}
+.lb-rank{font-family:var(--fh);font-size:1.1rem;font-weight:800;color:var(--muted);width:24px;text-align:center;flex-shrink:0}
+.lb-row:first-child .lb-rank{color:rgba(255,210,80,0.95)}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-family:var(--fh);font-size:1rem;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-meta{font-size:0.62rem;color:var(--muted);margin-top:1px}
+.lb-score{font-family:var(--fh);font-size:1.15rem;font-weight:800;color:var(--lime);flex-shrink:0}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ── PUZZLE PICKER ── */
+#picker{position:fixed;inset:0;background:var(--navy);z-index:80;display:flex;flex-direction:column;overflow:hidden}
+#picker.hidden{display:none}
+#picker-header{padding:14px 14px 10px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+#picker-logo{font-family:var(--fh);font-weight:800;font-size:1.6rem;line-height:1}
+#picker-logo span{color:var(--lime)}
+#picker-tagline{font-size:0.7rem;color:var(--muted);margin-top:2px}
+#picker-random{background:var(--lime);color:#0a1a08;border:none;border-radius:10px;padding:8px 14px;font-family:var(--fh);font-weight:800;font-size:0.88rem;cursor:pointer;white-space:nowrap}
+#picker-random:active{background:var(--lime2)}
+#picker-scroll{flex:1;overflow-y:auto;padding:10px 12px 20px}
+.picker-group{margin-bottom:18px}
+.picker-group-title{font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:2px}
+.pcard{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.15s,border-color 0.15s}
+.pcard:active{background:rgba(181,255,77,0.1);border-color:rgba(181,255,77,0.35)}
+.pcard-badge{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+.pcard-info{flex:1;min-width:0}
+.pcard-team{font-family:var(--fh);font-size:1.05rem;font-weight:800;color:var(--white);line-height:1.2}
+.pcard-meta{font-size:0.68rem;color:var(--muted);margin-top:2px}
+.pcard-match{font-size:0.62rem;color:rgba(255,255,255,0.4);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard-arrow{color:var(--muted);font-size:1rem;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="picker">
+  <div id="picker-header">
+    <div>
+      <div id="picker-logo">Lineup<span>Legends</span></div>
+      <div id="picker-tagline">Choose a lineup to guess</div>
+    </div>
+    <button id="picker-random">🎲 Random</button>
+  </div>
+  <div id="picker-scroll" id="picker-list"></div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="logo">Lineup<span>Legends</span></div>
+    <button id="back-btn">⚽ Lineups</button>
+  </header>
+  <div id="scorebar">
+    <div id="score-block">
+      <div id="score-num">0</div>
+      <div id="score-lbl">pts</div>
+    </div>
+    <div id="score-meta">
+      <div id="ptitle">Loading…</div>
+      <div id="hcomp"></div>
+      <div id="hints-used"></div>
+    </div>
+  </div>
+  <div id="prog-wrap">
+    <div id="prog-track"><div id="prog-fill"></div></div>
+  </div>
+  <div id="pitch-wrap">
+    <div id="pitch"><div id="pitch-bg"></div></div>
+  </div>
+  <div id="action-box">
+    <div id="input-row">
+      <input id="guess-input" type="text" placeholder="Type surname and press GO…"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <button id="gobtn">GO</button>
+    </div>
+    <div id="sel-row">
+      <div id="sel-left">
+        <div id="sel-info"><span id="sel-pos">—</span>&nbsp;<span id="sel-count"></span></div>
+        <div id="sel-sub"></div>
+      </div>
+      <div id="sel-right">
+        <button id="reveal-one-btn">Reveal this player</button>
+        <div id="sel-prompt">Tap a player ↑</div>
+      </div>
+    </div>
+  </div>
+  <div id="hint-bar">
+    <button class="hbtn" id="btn-nat" disabled>🌍 Nationality<span class="cost">−40 pts</span></button>
+    <button class="hbtn" id="btn-init" disabled>🔤 Next Letter<span class="cost">−30 pts</span></button>
+  </div>
+  <button id="reveal-btn">👁 Reveal All Names (score resets to 0)</button>
+  <span id="wrong-count"></span>
+</div>
+
+<div id="win">
+  <div class="wcard">
+    <div class="wgrade-block">
+      <div class="wgrade-letter" id="wgrade-letter">-</div>
+      <div class="wgrade-label" id="wgrade-label">-</div>
+    </div>
+    <div class="wsub" id="wsub"></div>
+    <div class="wscore-block">
+      <div class="wscore-num" id="wfinal-score">-</div>
+      <div class="wscore-lbl">pts / 1,100</div>
+    </div>
+    <div id="wgrid-display"></div>
+    <div id="wgrid-legend">
+      <span>🟩 Clean</span>
+      <span>🟨 Hints</span>
+      <span>🟥 Revealed</span>
+    </div>
+    <div class="wstats-row">
+      <div class="wstat-pill" id="wt">⏱ -</div>
+    </div>
+    <div class="wpenalty-row" id="wpenalty-row"></div>
+    <div class="wshare" id="wshare-text"></div>
+    <div id="wname-row">
+      <input id="wname-input" type="text" placeholder="Your name for leaderboard…" maxlength="20"
+        autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"/>
+      <button class="wbtn wbtn-submit" id="submit-score-btn">Submit</button>
+    </div>
+    <div id="wsubmit-msg"></div>
+    <div class="wbtns">
+      <button class="wbtn wbtn-share" id="share-btn">📋 Copy</button>
+      <button class="wbtn wbtn-lb" id="view-lb-btn">🏅 Board</button>
+      <button class="wbtn wbtn-play" id="again-btn">▶ Play</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leaderboard overlay -->
+<div id="lb-overlay">
+  <div id="lb-card">
+    <div id="lb-header">
+      <div id="lb-title">🏅 Leaderboard</div>
+      <button id="lb-close">✕</button>
+    </div>
+    <!-- Puzzle filter tabs -->
+    <div id="lb-tabs"></div>
+    <div id="lb-list"></div>
+    <div id="lb-empty">No scores yet — be the first!</div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const PUZZLES=[{"id":1,"team":"Leeds United","competition":"Champions League","match":"Champions League Semi Final vs Valencia (1st Leg)","formation":"442","year":2001,"players":[{"pos":"GK","name":"Nigel Martyn","nat":"England","club":"Leeds United"},{"pos":"RB","name":"Danny Mills","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Rio Ferdinand","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Dominic Matteo","nat":"Scotland","club":"Leeds United"},{"pos":"LB","name":"Ian Harte","nat":"Republic of Ireland","club":"Leeds United"},{"pos":"RM","name":"Lee Bowyer","nat":"England","club":"Leeds United"},{"pos":"CM","name":"David Batty","nat":"England","club":"Leeds United"},{"pos":"CM","name":"Olivier Dacourt","nat":"France","club":"Leeds United"},{"pos":"LM","name":"Harry Kewell","nat":"Australia","club":"Leeds United"},{"pos":"ST","name":"Alan Smith","nat":"England","club":"Leeds United"},{"pos":"ST","name":"Mark Viduka","nat":"Australia","club":"Leeds United"}]},{"id":2,"team":"England","competition":"European Championship","match":"UEFA Euro 2020 Final vs Italy","formation":"343","year":2021,"players":[{"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},{"pos":"CB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Harry Maguire","nat":"England","club":"Manchester United"},{"pos":"RWB","name":"Kieran Trippier","nat":"England","club":"Atletico Madrid"},{"pos":"CM","name":"Declan Rice","nat":"England","club":"West Ham United"},{"pos":"CM","name":"Kalvin Phillips","nat":"England","club":"Leeds United"},{"pos":"LWB","name":"Luke Shaw","nat":"England","club":"Manchester United"},{"pos":"RF","name":"Mason Mount","nat":"England","club":"Chelsea"},{"pos":"LF","name":"Raheem Sterling","nat":"England","club":"Manchester City"},{"pos":"ST","name":"Harry Kane","nat":"England","club":"Tottenham Hotspur"}]},{"id":3,"team":"England","competition":"World Cup","match":"FIFA World Cup Quarter Final vs France","formation":"433","year":2022,"players":[{"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},{"pos":"RB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Harry Maguire","nat":"England","club":"Manchester United"},{"pos":"LB","name":"Luke Shaw","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Jordan Henderson","nat":"England","club":"Liverpool"},{"pos":"CM","name":"Declan Rice","nat":"England","club":"West Ham United"},{"pos":"CM","name":"Jude Bellingham","nat":"England","club":"Borussia Dortmund"},{"pos":"RW","name":"Bukayo Saka","nat":"England","club":"Arsenal"},{"pos":"ST","name":"Harry Kane","nat":"England","club":"Tottenham Hotspur"},{"pos":"LW","name":"Phil Foden","nat":"England","club":"Manchester City"}]},{"id":4,"team":"England","competition":"European Championship","match":"UEFA Euro 2024 Final vs Spain","formation":"4231","year":2024,"players":[{"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},{"pos":"RB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Marc Guehi","nat":"England","club":"Crystal Palace"},{"pos":"LB","name":"Luke Shaw","nat":"England","club":"Manchester United"},{"pos":"DM","name":"Kobbie Mainoo","nat":"England","club":"Manchester United"},{"pos":"DM","name":"Declan Rice","nat":"England","club":"Arsenal"},{"pos":"RW","name":"Bukayo Saka","nat":"England","club":"Arsenal"},{"pos":"AM","name":"Jude Bellingham","nat":"England","club":"Real Madrid"},{"pos":"LW","name":"Phil Foden","nat":"England","club":"Manchester City"},{"pos":"ST","name":"Harry Kane","nat":"England","club":"Bayern Munich"}]},{"id":5,"team":"England","competition":"European Championship","match":"UEFA Euro 1996 Semi Final vs Germany","formation":"352","year":1996,"players":[{"pos":"GK","name":"David Seaman","nat":"England","club":"Arsenal"},{"pos":"CB","name":"Gareth Southgate","nat":"England","club":"Aston Villa"},{"pos":"CB","name":"Tony Adams","nat":"England","club":"Arsenal"},{"pos":"CB","name":"Stuart Pearce","nat":"England","club":"Nottingham Forest"},{"pos":"RWB","name":"Gary Neville","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Paul Ince","nat":"England","club":"Inter Milan"},{"pos":"CM","name":"Paul Gascoigne","nat":"England","club":"Rangers"},{"pos":"CM","name":"David Platt","nat":"England","club":"Arsenal"},{"pos":"LWB","name":"Darren Anderton","nat":"England","club":"Tottenham Hotspur"},{"pos":"ST","name":"Alan Shearer","nat":"England","club":"Blackburn Rovers"},{"pos":"ST","name":"Teddy Sheringham","nat":"England","club":"Tottenham Hotspur"}]},{"id":6,"team":"Liverpool","competition":"Champions League","match":"UEFA Champions League Final vs AC Milan","formation":"4411","year":2005,"players":[{"pos":"GK","name":"Jerzy Dudek","nat":"Poland","club":"Liverpool"},{"pos":"RB","name":"Steve Finnan","nat":"Republic of Ireland","club":"Liverpool"},{"pos":"CB","name":"Jamie Carragher","nat":"England","club":"Liverpool"},{"pos":"CB","name":"Sami Hyypia","nat":"Finland","club":"Liverpool"},{"pos":"LB","name":"Djimi Traore","nat":"Mali","club":"Liverpool"},{"pos":"RM","name":"Luis Garcia","nat":"Spain","club":"Liverpool"},{"pos":"CM","name":"Steven Gerrard","nat":"England","club":"Liverpool"},{"pos":"CM","name":"Xabi Alonso","nat":"Spain","club":"Liverpool"},{"pos":"LM","name":"John Arne Riise","nat":"Norway","club":"Liverpool"},{"pos":"SS","name":"Harry Kewell","nat":"Australia","club":"Liverpool"},{"pos":"ST","name":"Milan Baros","nat":"Czech Republic","club":"Liverpool"}]},{"id":7,"team":"Arsenal","competition":"Premier League","match":"Premier League vs Leicester City (Invincible Season Finale)","formation":"442","year":2004,"players":[{"pos":"GK","name":"Jens Lehmann","nat":"Germany","club":"Arsenal"},{"pos":"RB","name":"Lauren","nat":"Cameroon","club":"Arsenal"},{"pos":"CB","name":"Kolo Toure","nat":"Ivory Coast","club":"Arsenal"},{"pos":"CB","name":"Sol Campbell","nat":"England","club":"Arsenal"},{"pos":"LB","name":"Ashley Cole","nat":"England","club":"Arsenal"},{"pos":"RM","name":"Fredrik Ljungberg","nat":"Sweden","club":"Arsenal"},{"pos":"CM","name":"Patrick Vieira","nat":"France","club":"Arsenal"},{"pos":"CM","name":"Gilberto Silva","nat":"Brazil","club":"Arsenal"},{"pos":"LM","name":"Robert Pires","nat":"France","club":"Arsenal"},{"pos":"ST","name":"Dennis Bergkamp","nat":"Netherlands","club":"Arsenal"},{"pos":"ST","name":"Thierry Henry","nat":"France","club":"Arsenal"}]},{"id":8,"team":"Leicester City","competition":"Premier League","match":"Premier League vs Manchester United (Title Decider)","formation":"4411","year":2016,"players":[{"pos":"GK","name":"Kasper Schmeichel","nat":"Denmark","club":"Leicester City"},{"pos":"RB","name":"Danny Simpson","nat":"England","club":"Leicester City"},{"pos":"CB","name":"Wes Morgan","nat":"Jamaica","club":"Leicester City"},{"pos":"CB","name":"Robert Huth","nat":"Germany","club":"Leicester City"},{"pos":"LB","name":"Christian Fuchs","nat":"Austria","club":"Leicester City"},{"pos":"RM","name":"Riyad Mahrez","nat":"Algeria","club":"Leicester City"},{"pos":"CM","name":"Danny Drinkwater","nat":"England","club":"Leicester City"},{"pos":"CM","name":"N'Golo Kante","nat":"France","club":"Leicester City"},{"pos":"LM","name":"Jeffrey Schlupp","nat":"Ghana","club":"Leicester City"},{"pos":"SS","name":"Shinji Okazaki","nat":"Japan","club":"Leicester City"},{"pos":"ST","name":"Jamie Vardy","nat":"England","club":"Leicester City"}]},{"id":9,"team":"Manchester City","competition":"Premier League","match":"Premier League vs Queens Park Rangers (Title Winner)","formation":"442","year":2012,"players":[{"pos":"GK","name":"Joe Hart","nat":"England","club":"Manchester City"},{"pos":"RB","name":"Pablo Zabaleta","nat":"Argentina","club":"Manchester City"},{"pos":"CB","name":"Joleon Lescott","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Vincent Kompany","nat":"Belgium","club":"Manchester City"},{"pos":"LB","name":"Gael Clichy","nat":"France","club":"Manchester City"},{"pos":"RM","name":"David Silva","nat":"Spain","club":"Manchester City"},{"pos":"CM","name":"Yaya Toure","nat":"Ivory Coast","club":"Manchester City"},{"pos":"CM","name":"Gareth Barry","nat":"England","club":"Manchester City"},{"pos":"LM","name":"Samir Nasri","nat":"France","club":"Manchester City"},{"pos":"ST","name":"Carlos Tevez","nat":"Argentina","club":"Manchester City"},{"pos":"ST","name":"Sergio Aguero","nat":"Argentina","club":"Manchester City"}]},{"id":10,"team":"Chelsea","competition":"Champions League","match":"UEFA Champions League Final vs Bayern Munich","formation":"4231","year":2012,"players":[{"pos":"GK","name":"Petr Cech","nat":"Czech Republic","club":"Chelsea"},{"pos":"RB","name":"Jose Bosingwa","nat":"Portugal","club":"Chelsea"},{"pos":"CB","name":"Gary Cahill","nat":"England","club":"Chelsea"},{"pos":"CB","name":"David Luiz","nat":"Brazil","club":"Chelsea"},{"pos":"LB","name":"Ashley Cole","nat":"England","club":"Chelsea"},{"pos":"DM","name":"John Obi Mikel","nat":"Nigeria","club":"Chelsea"},{"pos":"DM","name":"Frank Lampard","nat":"England","club":"Chelsea"},{"pos":"RW","name":"Salomon Kalou","nat":"Ivory Coast","club":"Chelsea"},{"pos":"AM","name":"Ryan Bertrand","nat":"England","club":"Chelsea"},{"pos":"LW","name":"Juan Mata","nat":"Spain","club":"Chelsea"},{"pos":"ST","name":"Didier Drogba","nat":"Ivory Coast","club":"Chelsea"}]},{"id":11,"team":"Manchester United","competition":"Champions League","match":"UEFA Champions League Final vs Bayern Munich","formation":"442","year":1999,"players":[{"pos":"GK","name":"Peter Schmeichel","nat":"Denmark","club":"Manchester United"},{"pos":"RB","name":"Gary Neville","nat":"England","club":"Manchester United"},{"pos":"CB","name":"Jaap Stam","nat":"Netherlands","club":"Manchester United"},{"pos":"CB","name":"Ronny Johnsen","nat":"Norway","club":"Manchester United"},{"pos":"LB","name":"Jesper Blomqvist","nat":"Sweden","club":"Manchester United"},{"pos":"RM","name":"David Beckham","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Nicky Butt","nat":"England","club":"Manchester United"},{"pos":"CM","name":"Ryan Giggs","nat":"Wales","club":"Manchester United"},{"pos":"LM","name":"Andy Cole","nat":"England","club":"Manchester United"},{"pos":"ST","name":"Dwight Yorke","nat":"Trinidad and Tobago","club":"Manchester United"},{"pos":"ST","name":"Teddy Sheringham","nat":"England","club":"Manchester United"}]},{"id":12,"team":"Manchester City","competition":"Premier League","match":"Premier League vs Southampton (100 Point Season)","formation":"433","year":2018,"players":[{"pos":"GK","name":"Ederson","nat":"Brazil","club":"Manchester City"},{"pos":"RB","name":"Kyle Walker","nat":"England","club":"Manchester City"},{"pos":"CB","name":"Vincent Kompany","nat":"Belgium","club":"Manchester City"},{"pos":"CB","name":"Aymeric Laporte","nat":"France","club":"Manchester City"},{"pos":"LB","name":"Fabian Delph","nat":"England","club":"Manchester City"},{"pos":"CM","name":"Fernandinho","nat":"Brazil","club":"Manchester City"},{"pos":"CM","name":"David Silva","nat":"Spain","club":"Manchester City"},{"pos":"CM","name":"Kevin De Bruyne","nat":"Belgium","club":"Manchester City"},{"pos":"RW","name":"Raheem Sterling","nat":"England","club":"Manchester City"},{"pos":"ST","name":"Gabriel Jesus","nat":"Brazil","club":"Manchester City"},{"pos":"LW","name":"Leroy Sane","nat":"Germany","club":"Manchester City"}]},{"id":13,"team":"Barcelona","competition":"Champions League","match":"UEFA Champions League Final vs Manchester United","formation":"433","year":2009,"players":[{"pos":"GK","name":"Victor Valdes","nat":"Spain","club":"Barcelona"},{"pos":"RB","name":"Dani Alves","nat":"Brazil","club":"Barcelona"},{"pos":"CB","name":"Gerard Pique","nat":"Spain","club":"Barcelona"},{"pos":"CB","name":"Yaya Toure","nat":"Ivory Coast","club":"Barcelona"},{"pos":"LB","name":"Sylvinho","nat":"Brazil","club":"Barcelona"},{"pos":"CM","name":"Xavi","nat":"Spain","club":"Barcelona"},{"pos":"CM","name":"Sergio Busquets","nat":"Spain","club":"Barcelona"},{"pos":"CM","name":"Andres Iniesta","nat":"Spain","club":"Barcelona"},{"pos":"RW","name":"Lionel Messi","nat":"Argentina","club":"Barcelona"},{"pos":"ST","name":"Samuel Etoo","nat":"Cameroon","club":"Barcelona"},{"pos":"LW","name":"Thierry Henry","nat":"France","club":"Barcelona"}]},{"id":14,"team":"Real Madrid","competition":"Champions League","match":"UEFA Champions League Final vs Bayer Leverkusen","formation":"4231","year":2002,"players":[{"pos":"GK","name":"Cesar Sanchez","nat":"Spain","club":"Real Madrid"},{"pos":"RB","name":"Michel Salgado","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Fernando Hierro","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Ivan Helguera","nat":"Spain","club":"Real Madrid"},{"pos":"LB","name":"Roberto Carlos","nat":"Brazil","club":"Real Madrid"},{"pos":"DM","name":"Claude Makelele","nat":"France","club":"Real Madrid"},{"pos":"CM","name":"Zinedine Zidane","nat":"France","club":"Real Madrid"},{"pos":"RW","name":"Luis Figo","nat":"Portugal","club":"Real Madrid"},{"pos":"AM","name":"Raul","nat":"Spain","club":"Real Madrid"},{"pos":"LW","name":"Santiago Solari","nat":"Argentina","club":"Real Madrid"},{"pos":"ST","name":"Fernando Morientes","nat":"Spain","club":"Real Madrid"}]},{"id":15,"team":"Real Madrid","competition":"La Liga","match":"El Clasico vs Barcelona (Galacticos Era)","formation":"4231","year":2004,"players":[{"pos":"GK","name":"Iker Casillas","nat":"Spain","club":"Real Madrid"},{"pos":"RB","name":"Michel Salgado","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Walter Samuel","nat":"Argentina","club":"Real Madrid"},{"pos":"CB","name":"Ivan Helguera","nat":"Spain","club":"Real Madrid"},{"pos":"LB","name":"Roberto Carlos","nat":"Brazil","club":"Real Madrid"},{"pos":"CM","name":"David Beckham","nat":"England","club":"Real Madrid"},{"pos":"CM","name":"Zinedine Zidane","nat":"France","club":"Real Madrid"},{"pos":"RW","name":"Luis Figo","nat":"Portugal","club":"Real Madrid"},{"pos":"AM","name":"Raul","nat":"Spain","club":"Real Madrid"},{"pos":"LW","name":"Santiago Solari","nat":"Argentina","club":"Real Madrid"},{"pos":"ST","name":"Ronaldo","nat":"Brazil","club":"Real Madrid"}]},{"id":16,"team":"France","competition":"World Cup","match":"FIFA World Cup Final vs Brazil","formation":"442","year":1998,"players":[{"pos":"GK","name":"Fabien Barthez","nat":"France","club":"Monaco"},{"pos":"RB","name":"Lilian Thuram","nat":"France","club":"Parma"},{"pos":"CB","name":"Marcel Desailly","nat":"France","club":"AC Milan"},{"pos":"CB","name":"Frank Leboeuf","nat":"France","club":"Chelsea"},{"pos":"LB","name":"Bixente Lizarazu","nat":"France","club":"Bayern Munich"},{"pos":"RM","name":"Christian Karembeu","nat":"France","club":"Real Madrid"},{"pos":"CM","name":"Didier Deschamps","nat":"France","club":"Juventus"},{"pos":"CM","name":"Emmanuel Petit","nat":"France","club":"Arsenal"},{"pos":"LM","name":"Zinedine Zidane","nat":"France","club":"Juventus"},{"pos":"ST","name":"Youri Djorkaeff","nat":"France","club":"Inter Milan"},{"pos":"ST","name":"Stephane Guivarc'h","nat":"France","club":"Auxerre"}]},{"id":17,"team":"Germany","competition":"World Cup","match":"FIFA World Cup Final vs Argentina","formation":"433","year":2014,"players":[{"pos":"GK","name":"Manuel Neuer","nat":"Germany","club":"Bayern Munich"},{"pos":"RB","name":"Philipp Lahm","nat":"Germany","club":"Bayern Munich"},{"pos":"CB","name":"Jerome Boateng","nat":"Germany","club":"Bayern Munich"},{"pos":"CB","name":"Mats Hummels","nat":"Germany","club":"Borussia Dortmund"},{"pos":"LB","name":"Benedikt Howedes","nat":"Germany","club":"Schalke"},{"pos":"CM","name":"Bastian Schweinsteiger","nat":"Germany","club":"Bayern Munich"},{"pos":"CM","name":"Toni Kroos","nat":"Germany","club":"Bayern Munich"},{"pos":"CM","name":"Christoph Kramer","nat":"Germany","club":"Borussia Monchengladbach"},{"pos":"RW","name":"Thomas Muller","nat":"Germany","club":"Bayern Munich"},{"pos":"ST","name":"Miroslav Klose","nat":"Germany","club":"Lazio"},{"pos":"LW","name":"Mesut Ozil","nat":"Germany","club":"Arsenal"}]},{"id":18,"team":"Spain","competition":"European Championship","match":"UEFA Euro 2008 Final vs Germany","formation":"4141","year":2008,"players":[{"pos":"GK","name":"Iker Casillas","nat":"Spain","club":"Real Madrid"},{"pos":"RB","name":"Sergio Ramos","nat":"Spain","club":"Real Madrid"},{"pos":"CB","name":"Carlos Puyol","nat":"Spain","club":"Barcelona"},{"pos":"CB","name":"Carlos Marchena","nat":"Spain","club":"Valencia"},{"pos":"LB","name":"Joan Capdevila","nat":"Spain","club":"Villarreal"},{"pos":"DM","name":"Marcos Senna","nat":"Spain","club":"Villarreal"},{"pos":"RM","name":"David Silva","nat":"Spain","club":"Valencia"},{"pos":"CM","name":"Cesc Fabregas","nat":"Spain","club":"Arsenal"},{"pos":"LM","name":"Andres Iniesta","nat":"Spain","club":"Barcelona"},{"pos":"AM","name":"Xavi","nat":"Spain","club":"Barcelona"},{"pos":"ST","name":"Fernando Torres","nat":"Spain","club":"Liverpool"}]},{"id":19,"team":"AC Milan","competition":"Champions League","match":"UEFA Champions League Final vs Juventus (pen)","formation":"442","year":2003,"players":[{"pos":"GK","name":"Dida","nat":"Brazil","club":"AC Milan"},{"pos":"RB","name":"Kakha Kaladze","nat":"Georgia","club":"AC Milan"},{"pos":"CB","name":"Alessandro Costacurta","nat":"Italy","club":"AC Milan"},{"pos":"CB","name":"Alessandro Nesta","nat":"Italy","club":"AC Milan"},{"pos":"LB","name":"Paolo Maldini","nat":"Italy","club":"AC Milan"},{"pos":"RM","name":"Clarence Seedorf","nat":"Netherlands","club":"AC Milan"},{"pos":"CM","name":"Andrea Pirlo","nat":"Italy","club":"AC Milan"},{"pos":"CM","name":"Gennaro Gattuso","nat":"Italy","club":"AC Milan"},{"pos":"LM","name":"Rui Costa","nat":"Portugal","club":"AC Milan"},{"pos":"ST","name":"Andriy Shevchenko","nat":"Ukraine","club":"AC Milan"},{"pos":"ST","name":"Filippo Inzaghi","nat":"Italy","club":"AC Milan"}]},{"id":20,"team":"Blackburn Rovers","competition":"Premier League","match":"Premier League Title Winners vs Liverpool (Final Day)","formation":"442","year":1995,"players":[{"pos":"GK","name":"Tim Flowers","nat":"England","club":"Blackburn Rovers"},{"pos":"RB","name":"Henning Berg","nat":"Norway","club":"Blackburn Rovers"},{"pos":"CB","name":"Colin Hendry","nat":"Scotland","club":"Blackburn Rovers"},{"pos":"CB","name":"Ian Pearce","nat":"England","club":"Blackburn Rovers"},{"pos":"LB","name":"Graeme Le Saux","nat":"England","club":"Blackburn Rovers"},{"pos":"RM","name":"Stuart Ripley","nat":"England","club":"Blackburn Rovers"},{"pos":"CM","name":"Tim Sherwood","nat":"England","club":"Blackburn Rovers"},{"pos":"CM","name":"David Batty","nat":"England","club":"Blackburn Rovers"},{"pos":"LM","name":"Jason Wilcox","nat":"England","club":"Blackburn Rovers"},{"pos":"ST","name":"Alan Shearer","nat":"England","club":"Blackburn Rovers"},{"pos":"ST","name":"Chris Sutton","nat":"England","club":"Blackburn Rovers"}]},{"id":21,"team":"Leeds United","competition":"First Division","match":"First Division Title Winners vs Sheffield United (Final Day)","formation":"442","year":1992,"players":[{"pos":"GK","name":"John Lukic","nat":"England","club":"Leeds United"},{"pos":"RB","name":"Mel Sterland","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Chris Fairclough","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Chris Whyte","nat":"England","club":"Leeds United"},{"pos":"LB","name":"Tony Dorigo","nat":"England","club":"Leeds United"},{"pos":"RM","name":"Gordon Strachan","nat":"Scotland","club":"Leeds United"},{"pos":"CM","name":"David Batty","nat":"England","club":"Leeds United"},{"pos":"CM","name":"Gary McAllister","nat":"Scotland","club":"Leeds United"},{"pos":"LM","name":"Gary Speed","nat":"Wales","club":"Leeds United"},{"pos":"ST","name":"Rod Wallace","nat":"England","club":"Leeds United"},{"pos":"ST","name":"Lee Chapman","nat":"England","club":"Leeds United"}]},{"id":22,"team":"Leeds United","competition":"Championship","match":"Championship Title Winners vs Charlton Athletic","formation":"433","year":2020,"players":[{"pos":"GK","name":"Illan Meslier","nat":"France","club":"Leeds United"},{"pos":"RB","name":"Luke Ayling","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Ben White","nat":"England","club":"Brighton"},{"pos":"CB","name":"Liam Cooper","nat":"Scotland","club":"Leeds United"},{"pos":"LB","name":"Stuart Dallas","nat":"Northern Ireland","club":"Leeds United"},{"pos":"CM","name":"Kalvin Phillips","nat":"England","club":"Leeds United"},{"pos":"CM","name":"Mateusz Klich","nat":"Poland","club":"Leeds United"},{"pos":"RW","name":"Helder Costa","nat":"Portugal","club":"Leeds United"},{"pos":"AM","name":"Pablo Hernandez","nat":"Spain","club":"Leeds United"},{"pos":"LW","name":"Jack Harrison","nat":"England","club":"Leeds United"},{"pos":"ST","name":"Patrick Bamford","nat":"England","club":"Leeds United"}]},{"id":23,"team":"Leeds United","competition":"Championship","match":"Championship Playoff Final vs Southampton at Wembley","formation":"4231","year":2024,"players":[{"pos":"GK","name":"Illan Meslier","nat":"France","club":"Leeds United"},{"pos":"RB","name":"Archie Gray","nat":"England","club":"Leeds United"},{"pos":"CB","name":"Joe Rodon","nat":"Wales","club":"Leeds United"},{"pos":"CB","name":"Ethan Ampadu","nat":"Wales","club":"Leeds United"},{"pos":"LB","name":"Junior Firpo","nat":"Dominican Republic","club":"Leeds United"},{"pos":"DM","name":"Ilia Gruev","nat":"Bulgaria","club":"Leeds United"},{"pos":"DM","name":"Glen Kamara","nat":"Finland","club":"Leeds United"},{"pos":"RW","name":"Wilfried Gnonto","nat":"Italy","club":"Leeds United"},{"pos":"AM","name":"Georginio Rutter","nat":"France","club":"Leeds United"},{"pos":"LW","name":"Crysencio Summerville","nat":"Netherlands","club":"Leeds United"},{"pos":"ST","name":"Joel Piroe","nat":"Netherlands","club":"Leeds United"}]}];
+
+const FLAGS={"England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Wales":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","Republic of Ireland":"🇮🇪","France":"🇫🇷","Spain":"🇪🇸","Germany":"🇩🇪","Italy":"🇮🇹","Netherlands":"🇳🇱","Portugal":"🇵🇹","Brazil":"🇧🇷","Argentina":"🇦🇷","Australia":"🇦🇺","Norway":"🇳🇴","Sweden":"🇸🇪","Denmark":"🇩🇰","Finland":"🇫🇮","Poland":"🇵🇱","Belgium":"🇧🇪","Ivory Coast":"🇨🇮","Cameroon":"🇨🇲","Mali":"🇲🇱","Ghana":"🇬🇭","Algeria":"🇩🇿","Nigeria":"🇳🇬","Japan":"🇯🇵","Czech Republic":"🇨🇿","Jamaica":"🇯🇲","Trinidad and Tobago":"🇹🇹","Austria":"🇦🇹","Morocco":"🇲🇦","Senegal":"🇸🇳","South Korea":"🇰🇷","Croatia":"🇭🇷","Switzerland":"🇨🇭"};
+function flag(n){return FLAGS[n]||'🌍';}
+
+// Coordinates: y=0 top (opponent goal), y=100 bottom (our goal/GK end)
+// GK at y=88 is inside the penalty box (box spans ~82-98% of pitch height)
+// All y values chosen so the dot+tag fits within the pitch at typical screen sizes
+const LAYOUTS={
+  "442":[
+    {x:50,y:85},
+    {x:82,y:70},{x:61,y:70},{x:39,y:70},{x:18,y:70},
+    {x:82,y:49},{x:62,y:53},{x:38,y:53},{x:18,y:49},
+    {x:65,y:24},{x:35,y:24}
+  ],
+  "433":[
+    {x:50,y:85},
+    {x:82,y:70},{x:61,y:70},{x:39,y:70},{x:18,y:70},
+    {x:68,y:49},{x:50,y:49},{x:32,y:49},
+    {x:82,y:19},{x:50,y:15},{x:18,y:19}
+  ],
+  "343":[
+    {x:50,y:85},
+    {x:68,y:70},{x:50,y:70},{x:32,y:70},
+    {x:83,y:49},{x:61,y:53},{x:39,y:53},{x:17,y:49},
+    {x:76,y:21},{x:24,y:21},{x:50,y:16}
+  ],
+  "4231":[
+    {x:50,y:85},
+    {x:82,y:71},{x:61,y:71},{x:39,y:71},{x:18,y:71},
+    {x:63,y:58},{x:37,y:58},
+    {x:79,y:40},{x:50,y:38},{x:21,y:40},
+    {x:50,y:17}
+  ],
+  "352":[
+    {x:50,y:85},
+    {x:68,y:70},{x:50,y:70},{x:32,y:70},
+    {x:85,y:49},{x:67,y:53},{x:50,y:53},{x:33,y:53},{x:15,y:49},
+    {x:65,y:24},{x:35,y:24}
+  ],
+  "4411":[
+    {x:50,y:85},
+    {x:82,y:70},{x:61,y:70},{x:39,y:70},{x:18,y:70},
+    {x:82,y:50},{x:61,y:54},{x:39,y:54},{x:18,y:50},
+    {x:50,y:34},
+    {x:50,y:17}
+  ],
+  "4141":[
+    {x:50,y:85},
+    {x:82,y:70},{x:61,y:70},{x:39,y:70},{x:18,y:70},
+    {x:50,y:60},
+    {x:80,y:44},{x:60,y:44},{x:40,y:44},{x:20,y:44},
+    {x:50,y:17}
+  ]
+};
+
+function pitchSVG(){
+  return`<svg viewBox="0 0 68 105" xmlns="http://www.w3.org/2000/svg"
+    style="position:absolute;inset:0;width:100%;height:100%;opacity:0.28;pointer-events:none"
+    stroke="white" stroke-width="0.6" fill="none">
+    <rect x="2" y="2" width="64" height="101" rx="1"/>
+    <line x1="2" y1="52.5" x2="66" y2="52.5"/>
+    <circle cx="34" cy="52.5" r="9.15"/>
+    <circle cx="34" cy="52.5" r="0.8" fill="white" stroke="none"/>
+    <rect x="13.84" y="2" width="40.32" height="16.5"/>
+    <rect x="24.84" y="2" width="18.32" height="5.5"/>
+    <circle cx="34" cy="13.8" r="0.8" fill="white" stroke="none"/>
+    <rect x="13.84" y="86.5" width="40.32" height="16.5"/>
+    <rect x="24.84" y="99.5" width="18.32" height="5.5"/>
+    <circle cx="34" cy="91.2" r="0.8" fill="white" stroke="none"/>
+    <path d="M2,5 A3,3 0 0,0 5,2"/><path d="M66,5 A3,3 0 0,1 63,2"/>
+    <path d="M2,100 A3,3 0 0,1 5,103"/><path d="M66,100 A3,3 0 0,0 63,103"/>
+  </svg>`;
+}
+
+// ── HELPERS ──
+function norm(s){
+  return(s||'').toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9 ']/g,'').trim();
+}
+
+// Levenshtein edit distance
+function editDist(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);
+  for(let j=0;j<=n;j++)dp[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+// Fuzzy tolerance: 1 error per 5 chars, min 0, max 3
+function fuzzyTol(s){ return Math.min(3, Math.floor(s.length/5)); }
+
+// Whether guess fuzzy-matches a target string
+function fuzzyMatch(guess, target){
+  if(guess===target) return true;
+  return editDist(guess, target) <= fuzzyTol(target);
+}
+
+// getSurname: handles compound surnames like "De Bruyne", "Arne Riise", "Obi Mikel"
+// Prefixes that are part of the surname, not a first name
+const PREFIXES=new Set(['de','van','von','den','der','el','al','arne','obi','dos','di','da','le','la']);
+function getSurname(name){
+  const parts=name.trim().split(' ');
+  if(parts.length===1) return parts[0];
+  // Find where the surname starts: first part (after the first word) that is a prefix
+  // or the last word if no prefix found
+  for(let i=1;i<parts.length;i++){
+    if(PREFIXES.has(parts[i].toLowerCase())) return parts.slice(i).join(' ');
+  }
+  return parts[parts.length-1];
+}
+
+function isMatch(guess, name){
+  const g=norm(guess), n=norm(name);
+  // Exact full name
+  if(fuzzyMatch(g,n)) return true;
+  const parts=n.split(' ');
+  // Try surname (last word or compound from prefix)
+  const sn=norm(getSurname(name));
+  if(sn.length>=3 && fuzzyMatch(g,sn)) return true;
+  // Try last word alone (catches "Bruyne" for "De Bruyne")
+  const lastWord=parts[parts.length-1];
+  if(lastWord.length>=3 && fuzzyMatch(g,lastWord)) return true;
+  // Try first name (min 4 chars to avoid false positives)
+  if(parts[0].length>=4 && fuzzyMatch(g,parts[0])) return true;
+  return false;
+}
+
+function hintLabel(p,puzzle){
+  const natTeams=['England','Spain','France','Germany','Italy','Argentina','Brazil','Portugal','Netherlands','Belgium'];
+  return natTeams.includes(puzzle.team)?p.club:p.nat;
+}
+
+// ── STATE ──
+let S={},usedIds=[],scoreTimer=null;
+// ── SCORING ──
+// Each player worth 100 pts, reduced by hints:
+//   Nationality:  -40 pts  → 60 pts remaining
+//   1st letter:   -30 pts  → 30 pts remaining
+//   2nd letter:   -20 pts  → 10 pts remaining
+//   3rd letter:   -10 pts  →  0 pts remaining
+//   4th+ letters: player worth 0 (name basically given)
+//   Reveal:       0 pts
+// Time bonus: +1pt per 10s under 20min par
+const BASE_PER_PLAYER = 100;
+const HINT_COST_NAT   = 40;
+// Each letter costs the same flat amount — no more "free" letters after index 2
+// Nat + 1 letter = 60pts remaining, + 2 letters = 20pts, + 3 letters = 0pts (gone)
+const HINT_COST_LETTER= [30, 25, 20]; // flat 20 after that, handled below
+const REVEAL_PENALTY  = 150;
+
+function getGrade(score){
+  const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
+  if(score===1100) return {letter:'S', color:'#FFD700', label:pick([
+    'Pure class. No hints needed.',
+    'Absolute legend. You knew every single one.',
+    'Top of the table. Utterly flawless.',
+    "That's a Ballon d'Or performance right there.",
+    'The full 90 and not a single lifeline needed.',
+    'Pep himself would be taking notes.',
+    "You didn't need the assistant manager once.",
+  ])};
+  if(score>=950) return {letter:'A', color:'#B5FF4D', label:pick([
+    'Brilliant — nearly perfect.',
+    'Champions League standard right there.',
+    "Almost flawless. Man of the Match stuff.",
+    'Clinical finishing. Tiny bit of help but barely.',
+    'The scout report is glowing.',
+    "Top drawer. You know your football.",
+    'One slip but you recovered well. Impressive.',
+  ])};
+  if(score>=750) return {letter:'B', color:'#5bc8ff', label:pick([
+    'Solid performance. You know your football.',
+    'Good outing — a few rough edges though.',
+    'Europa League level. Respectable showing.',
+    "Not bad at all. You've got potential.",
+    'A reliable squad player. Keep working.',
+    'Good shift. The manager noticed.',
+    "You're in the XI but there's room to improve.",
+  ])};
+  if(score>=450) return {letter:'C', color:'#ff9f1c', label:pick([
+    "Mid-table. You'll want to push on from here.",
+    'Needed the manager to bail you out a few times.',
+    'A draw at best. More to give next time.',
+    "You're in the squad but not starting.",
+    'Decent effort — just a few too many lifelines.',
+    'The fans are patient. For now.',
+    "You've seen worse — but you've done better.",
+  ])};
+  if(score>=100) return {letter:'D', color:'#ff9f1c', label:pick([
+    'Struggling in the relegation zone.',
+    'The fans are getting restless in the stands.',
+    "You'll need a busy January transfer window.",
+    'Back to the training ground for you.',
+    'The physio saw more of the pitch than you did.',
+    "It's a difficult watch. The board are worried.",
+    'Not great. The gaffer wants a word.',
+  ])};
+  return {letter:'F', color:'#ff5c5c', label:pick([
+    'Relegated. No arguments whatsoever.',
+    'The chairman has called an emergency meeting.',
+    'That was a Sunday League performance.',
+    'Sacked in the morning. Sacked in the morning.',
+    "Even autocomplete would've done better.",
+    'The stadium announcer knew more than you did.',
+    "You're on a free transfer. No takers yet.",
+  ])};
+}
+
+function startTimer(){
+  clearInterval(scoreTimer);
+  // No score drain — just track elapsed time for display & time bonus
+  scoreTimer=setInterval(()=>{},9999);
+}
+function renderScore(flash){
+  const el=document.getElementById('score-num');
+  el.textContent=S.score.toLocaleString();
+  if(flash){el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),500);}
+}
+
+function init(puzzle){
+  // If no puzzle passed, pick random
+  if(!puzzle){
+    if(usedIds.length>=PUZZLES.length)usedIds=[];
+    const rem=PUZZLES.filter(p=>!usedIds.includes(p.id));
+    puzzle=rem[Math.floor(Math.random()*rem.length)];
+  }
+  usedIds.push(puzzle.id);
+  const layout=LAYOUTS[puzzle.formation]||LAYOUTS['442'];
+  S={puzzle,layout,solved:new Set(),guesses:0,wrong:0,
+     score:0,             // built up as players are solved
+     playerPotential:{},  // i -> current potential (starts at 100, reduced by hints)
+     natDone:new Set(),
+     initDone:new Set(),
+     lettersRevealed:new Map(), // i -> count of letters revealed
+     revealedPlayers:new Set(),
+     done:false,start:Date.now(),activeIdx:null};
+  // Initialise potential for each player
+  puzzle.players.forEach((_,i)=>{ S.playerPotential[i]=BASE_PER_PLAYER; });
+  winShown=false;
+  document.getElementById('win').classList.remove('show');
+  document.getElementById('guess-input').value='';
+  buildPitch();
+  renderUI();
+  startTimer();
+}
+
+function buildPitch(){
+  const pitch=document.getElementById('pitch');
+  [...pitch.querySelectorAll('.pdot')].forEach(d=>d.remove());
+  document.getElementById('pitch-bg').innerHTML=pitchSVG();
+
+  const fmt=S.puzzle.formation.split('').join('-');
+  // Title: Team · Year · Formation
+  document.getElementById('ptitle').textContent=`${S.puzzle.team} · ${S.puzzle.year} · ${fmt}`;
+  // Comp + match context below
+  document.getElementById('hcomp').textContent=`${S.puzzle.competition} · ${S.puzzle.match}`;
+
+  // Set nationality button label: national teams → hint is club side, club teams → hint is nationality
+  const isNatTeam=['England','Spain','France','Germany','Italy','Argentina','Brazil','Portugal','Netherlands','Belgium'].includes(S.puzzle.team);
+  const natBtn=document.getElementById('btn-nat');
+  natBtn.innerHTML=isNatTeam
+    ? '🏟️ Club Side<span class="cost">−50 pts</span>'
+    : '🌍 Nationality<span class="cost">−50 pts</span>';
+
+  S.puzzle.players.forEach((p,i)=>{
+    const pos=S.layout[i]||{x:50,y:50};
+    const sn=getSurname(p.name);
+    const dot=document.createElement('div');
+    dot.className='pdot';
+    dot.id=`dot-${i}`;
+    dot.style.left=pos.x+'%';
+    dot.style.top=pos.y+'%';
+    dot.innerHTML=
+      `<div class="ring" id="ring-${i}">${p.pos}</div>`+
+      `<div class="tag">`+
+        `<span class="tag-count" id="tc-${i}">(${sn.length})</span>`+
+        `<span class="tag-name" id="tn-${i}"></span>`+
+        `<span class="tag-init" id="ti-${i}"></span>`+
+        `<span class="tag-clue" id="tclue-${i}"></span>`+
+      `</div>`;
+    dot.addEventListener('click',()=>setActive(i));
+    pitch.appendChild(dot);
+  });
+}
+
+function setActive(i){
+  if(S.solved.has(i)) return;
+  S.activeIdx=i;
+  S.puzzle.players.forEach((_,j)=>{
+    const dot=document.getElementById(`dot-${j}`);
+    if(dot) dot.classList.toggle('active', j===i);
+  });
+  // Enable hint buttons now a player is selected
+  document.getElementById('btn-nat').disabled=false;
+  document.getElementById('btn-init').disabled=false;
+  renderStrip();
+}
+
+function renderStrip(){
+  const i=S.activeIdx;
+  const prompt=document.getElementById('sel-prompt');
+  const posEl=document.getElementById('sel-pos');
+  const countEl=document.getElementById('sel-count');
+  const subEl=document.getElementById('sel-sub');
+  const revOne=document.getElementById('reveal-one-btn');
+
+  if(i===null||i===undefined||S.solved.has(i)){
+    posEl.textContent='—'; countEl.textContent=''; subEl.textContent='';
+    prompt.style.display='block';
+    prompt.textContent=(i!==null&&i!==undefined&&S.solved.has(i))?'✓ Solved! Tap another ↑':'Tap a player ↑';
+    if(revOne)revOne.style.display='none';
+    return;
+  }
+  const p=S.puzzle.players[i];
+  const sn=getSurname(p.name);
+  const initRevealed=S.initDone.has(i);
+  const natRevealed=S.natDone.has(i);
+  posEl.textContent=p.pos;
+  countEl.textContent=initRevealed ? sn[0].toUpperCase()+'·'.repeat(sn.length-1) : `(${sn.length} letters)`;
+  subEl.textContent=natRevealed ? `${flag(p.nat)} ${hintLabel(p,S.puzzle)}` : '';
+  prompt.style.display='none';
+  if(revOne)revOne.style.display='block';
+  // Update letter button cost based on how many letters already revealed for this player
+  const already=S.lettersRevealed.get(i)||0;
+  const nextIdx=already;
+  const nextCost=nextIdx<HINT_COST_LETTER.length ? HINT_COST_LETTER[nextIdx] : HINT_COST_LETTER[HINT_COST_LETTER.length-1];
+  const remaining=sn.length-already;
+  document.getElementById('btn-init').innerHTML=remaining>0
+    ? (nextCost>0 ? `🔤 Next Letter<span class="cost">-${nextCost}pts</span>` : `🔤 Next Letter<span class="cost">free</span>`)
+    : `🔤 All Letters<span class="cost">revealed</span>`;
+}
+
+function renderUI(){
+  const {puzzle,solved,wrong,natDone,initDone,lettersRevealed,hintsTotal}=S;
+  const total=puzzle.players.length,found=solved.size;
+  document.getElementById('prog-fill').style.width=`${(found/total)*100}%`;
+  // progress bar only — no text counter (visible on pitch)
+  // Hints tracker
+  const totalLetters=Array.from(lettersRevealed.values()).reduce((a,b)=>a+b,0);
+  const hintParts=[];
+  if(natDone.size>0) hintParts.push(`🌍×${natDone.size}`);
+  if(totalLetters>0) hintParts.push(`🔤×${totalLetters}`);
+  if(wrong>0) hintParts.push(`❌×${wrong}`);
+  document.getElementById('hints-used').textContent=hintParts.join('  ');
+  document.getElementById('wrong-count').textContent='';
+  renderScore();
+  renderStrip();
+}
+
+// Award points and solve — called on correct guess
+function awardAndSolve(i,name){
+  const pts=S.playerPotential[i]||0; // can be negative for reveals
+  S.score+=pts;
+  S.score=Math.max(-500,S.score); // floor at -500
+  renderScore(pts!==0);
+  solveDot(i,name);
+}
+
+// Solve a dot: show surname in tag, hide count/hints
+function solveDot(i,name){
+  const dot=document.getElementById(`dot-${i}`);
+  const tc=document.getElementById(`tc-${i}`);
+  const tn=document.getElementById(`tn-${i}`);
+  const ti=document.getElementById(`ti-${i}`);
+  const tclue=document.getElementById(`tclue-${i}`);
+  if(dot){dot.classList.add('solved');dot.classList.remove('active');}
+  if(tc)tc.style.display='none';
+  if(ti)ti.style.display='none';
+  if(tclue)tclue.style.display='none';
+  if(tn){tn.textContent=getSurname(name);tn.style.display='block';}
+  // If this was the active player, clear selection and find next unsolved
+  if(S.activeIdx===i){
+    const next=S.puzzle.players.findIndex((_,j)=>j!==i&&!S.solved.has(j));
+    S.activeIdx=next>=0?next:null;
+    if(S.activeIdx!==null){
+      const nd=document.getElementById(`dot-${S.activeIdx}`);
+      if(nd)nd.classList.add('active');
+      document.getElementById('btn-nat').disabled=false;
+      document.getElementById('btn-init').disabled=false;
+    } else {
+      // All solved
+      document.getElementById('btn-nat').disabled=true;
+      document.getElementById('btn-init').disabled=true;
+    }
+  }
+}
+
+// ── PARTIAL MATCH ──
+// Returns {player index, matchedChars} if guess is a strong partial/near-match
+// but not a full match. Used for "so close" feedback.
+function checkPartial(val){
+  const g = norm(val);
+  if(g.length < 3) return null; // too short to bother
+
+  let best = null;
+
+  S.puzzle.players.forEach((p, i) => {
+    if(S.solved.has(i)) return;
+
+    const sn = norm(getSurname(p.name));
+    const fullNorm = norm(p.name);
+
+    // 1. Prefix match: guess is a prefix of the surname (min 3 chars, at least 50% of surname)
+    if(sn.startsWith(g) && g.length >= Math.max(3, Math.floor(sn.length * 0.4))){
+      best = {i, sn, matched: g.length, type:'prefix'};
+    }
+    // 2. Near-miss: within fuzzy tolerance + 1 (one more error than we accept as correct)
+    // Only fires if guess is long enough to be meaningful
+    if(!best && g.length >= 4){
+      const dist = editDist(g, sn);
+      const nearTol = fuzzyTol(sn) + 1;
+      if(dist <= nearTol && dist > 0){
+        best = {i, sn, matched: sn.length - dist, type:'near'};
+      }
+      // Also check full name
+      if(!best){
+        const distFull = editDist(g, fullNorm);
+        if(distFull <= nearTol + 1 && distFull > 0){
+          best = {i, sn, matched: sn.length - 1, type:'near'};
+        }
+      }
+    }
+  });
+
+  return best;
+}
+
+// Show partial progress on a dot's tag — lights up correctly-typed letters
+function showPartialOnDot(i, sn, matchedCount){
+  const ti = document.getElementById(`ti-${i}`);
+  if(!ti) return;
+  // Build: matched letters shown, rest as dots e.g. "Casil···"
+  const shown = sn.slice(0, matchedCount);
+  const remaining = '·'.repeat(Math.max(0, sn.length - matchedCount));
+  ti.textContent = shown + remaining;
+  ti.style.display = 'block';
+}
+
+function guess(val){
+  if(S.done||!val.trim())return;
+  const g = val.trim();
+
+  // Check for full match first
+  let hit=false, hitName='';
+  S.puzzle.players.forEach((p,i)=>{
+    if(!S.solved.has(i)&&isMatch(g,p.name)){
+      S.solved.add(i);awardAndSolve(i,p.name);hit=true;hitName=p.name;
+    }
+  });
+
+  if(hit){
+    S.guesses++;
+    toast('✓ '+hitName,'ok');
+    document.getElementById('guess-input').value='';
+    if(S.solved.size===S.puzzle.players.length){
+      S.done=true; // prevent any further guesses while win screen loads
+      setTimeout(showWin,700);
+    }
+    renderUI();
+    return;
+  }
+
+  // Check for partial / near match — no penalty, no guess count increment
+  const partial = checkPartial(g);
+  if(partial){
+    const {i, sn, matched, type} = partial;
+    showPartialOnDot(i, sn, matched);
+    // Highlight the relevant dot
+    S.puzzle.players.forEach((_,j)=>{
+      const d=document.getElementById(`dot-${j}`);
+      if(d) d.classList.toggle('active', j===i);
+    });
+    S.activeIdx = i;
+    if(type === 'prefix'){
+      toast(`So close! Keep going…`, 'warm');
+    } else {
+      toast(`Nearly! Check the spelling`, 'warm');
+    }
+    // Don't clear input — let them keep typing / correcting
+    // Don't penalise score or increment wrong count
+    renderUI();
+    return;
+  }
+
+  // Full wrong guess
+  S.guesses++;
+  S.wrong++;
+  toast('Not in this lineup','bad');
+  const inp=document.getElementById('guess-input');
+  inp.classList.add('shake');
+  setTimeout(()=>inp.classList.remove('shake'),400);
+  document.getElementById('guess-input').value='';
+  renderUI();
+}
+
+function doNat(){
+  if(S.done)return;
+  const i=S.activeIdx;
+  if(i===null||i===undefined){toast('Tap a player first!','bad');return;}
+  if(S.solved.has(i)){toast('Already solved!','info');return;}
+  if(S.natDone.has(i)){toast('Already revealed for this player','info');return;}
+  S.natDone.add(i);
+  S.playerPotential[i]=Math.max(0,(S.playerPotential[i]||BASE_PER_PLAYER)-HINT_COST_NAT);
+  renderScore(false);
+  const p=S.puzzle.players[i];
+  const lbl=hintLabel(p,S.puzzle);
+  const fl=flag(p.nat);
+  const tclue=document.getElementById(`tclue-${i}`);
+  if(tclue){tclue.textContent=`${fl} ${lbl}`;tclue.style.display='block';}
+  toast(`${fl} ${lbl}`,'info');
+  renderUI();
+}
+
+function doInit(){
+  if(S.done)return;
+  const i=S.activeIdx;
+  if(i===null||i===undefined){toast('Tap a player first!','bad');return;}
+  if(S.solved.has(i)){toast('Already solved!','info');return;}
+  const sn=getSurname(S.puzzle.players[i].name);
+  const already=S.lettersRevealed.get(i)||0;
+  if(already>=sn.length){toast('All letters revealed!','info');return;}
+  // Cost scales: 150 for 1st, +50 per additional letter
+  // Cost depends on which letter this is: 25, 25, then 10 for each after
+  const letterIdx=already; // 0-based index of letter being revealed
+  const cost=letterIdx<HINT_COST_LETTER.length ? HINT_COST_LETTER[letterIdx] : (HINT_COST_LETTER[HINT_COST_LETTER.length-1]);
+  S.playerPotential[i]=Math.max(0,(S.playerPotential[i]||BASE_PER_PLAYER)-cost);
+  renderScore(false);
+  const next=already+1;
+  S.lettersRevealed.set(i,next);
+  S.initDone.add(i);
+  const revealed=sn.slice(0,next).toUpperCase();
+  const dots='·'.repeat(sn.length-next);
+  const hint=revealed+dots;
+  const ti=document.getElementById(`ti-${i}`);
+  if(ti){ti.textContent=hint;ti.style.display='block';}
+  // Update button to show escalating cost
+  const nextIdx=next;
+  const nextCost=nextIdx<HINT_COST_LETTER.length ? HINT_COST_LETTER[nextIdx] : HINT_COST_LETTER[HINT_COST_LETTER.length-1];
+  const remaining=sn.length-next;
+  document.getElementById('btn-init').innerHTML=remaining>0
+    ? (nextCost>0 ? `🔤 Next Letter<span class="cost">-${nextCost}pts</span>` : `🔤 Next Letter<span class="cost">free</span>`)
+    : `🔤 All Letters<span class="cost">revealed</span>`;
+  toast(`Letter ${next}/${sn.length}: ${hint}`,'info');
+  renderUI();
+}
+
+function revealOne(){
+  const i=S.activeIdx;
+  if(i===null||i===undefined||S.solved.has(i)||S.done)return;
+  S.revealedPlayers.add(i);
+  S.playerPotential[i]=-REVEAL_PENALTY; // reveal = heavy penalty
+  S.solved.add(i);
+  awardAndSolve(i,S.puzzle.players[i].name);
+  toast('👁 '+getSurname(S.puzzle.players[i].name),'info');
+  if(S.solved.size===S.puzzle.players.length)setTimeout(showWin,3000);
+  renderUI();
+}
+
+function revealAll(){
+  if(S.done)return;
+  S.puzzle.players.forEach((p,i)=>{
+    if(!S.solved.has(i)){S.playerPotential[i]=-REVEAL_PENALTY;S.solved.add(i);awardAndSolve(i,p.name);}
+  });
+  renderUI();
+  setTimeout(showWin,3000);
+}
+
+let winShown=false;
+function showWin(){
+  if(winShown)return;
+  winShown=true;
+  S.done=true;clearInterval(scoreTimer);
+  try{
+  const elapsed=Math.round((Date.now()-S.start)/1000);
+  const mins=Math.floor(elapsed/60), secs=elapsed%60;
+  const timeStr=mins>0?`${mins}m ${secs}s`:`${secs}s`;
+  const totalGuesses=S.guesses;
+  const correct=S.puzzle.players.length;
+  const acc=Math.round((correct/Math.max(totalGuesses,1))*100);
+
+  // Score breakdown — work out how many points came from clean vs hinted guesses
+  const letterTotal=Array.from(S.lettersRevealed.values()).reduce((a,b)=>a+b,0);
+  const revealCount=S.revealedPlayers?S.revealedPlayers.size:0;
+  const hintedCount=S.natDone.size+letterTotal; // total individual hints used
+
+  // Calculate nat penalty and letter penalty for display only
+  let natPenalty=0, letterPenalty=0, revealPenalty=0;
+  S.puzzle.players.forEach((_,i)=>{
+    if(S.natDone.has(i)) natPenalty+=HINT_COST_NAT;
+    const lc=S.lettersRevealed.get(i)||0;
+    for(let k=0;k<lc;k++) letterPenalty+=(k<HINT_COST_LETTER.length?HINT_COST_LETTER[k]:HINT_COST_LETTER[HINT_COST_LETTER.length-1]);
+    if(S.revealedPlayers&&S.revealedPlayers.has(i)) revealPenalty+=REVEAL_PENALTY;
+  });
+  const timeBonus=0;
+  const finalScore=S.score;
+
+  // Grade — hero element
+  const grade=getGrade(finalScore);
+  const glEl=document.getElementById('wgrade-letter');
+  const glLb=document.getElementById('wgrade-label');
+  if(glEl){glEl.textContent=grade.letter;glEl.style.color=grade.color;}
+  if(glLb){glLb.textContent=grade.label;}
+
+  // Populate card
+  S.score=finalScore;
+  document.getElementById('wsub').textContent=`${S.puzzle.team} · ${S.puzzle.year} · ${S.puzzle.competition}`;
+  document.getElementById('wfinal-score').textContent=finalScore.toLocaleString();
+  document.getElementById('wt').textContent=`⏱ ${timeStr}`;
+  // Wrong guesses not shown — all players must be completed so it's not meaningful
+
+  // Hint penalty summary
+  const totalPenalty=natPenalty+letterPenalty+revealPenalty;
+  const penRow=document.getElementById('wpenalty-row');
+  if(penRow){
+    const parts=[];
+    if(S.natDone.size) parts.push(`🌍×${S.natDone.size} (−${natPenalty}pts)`);
+    if(letterTotal) parts.push(`🔤×${letterTotal} (−${letterPenalty}pts)`);
+    if(revealCount) parts.push(`👁×${revealCount} (−${revealPenalty}pts penalty)`);
+    penRow.textContent=parts.length?'Hints: '+parts.join('  '):'';
+  }
+
+  // Shareable text (Wordle-style)
+  const fmt=S.puzzle.formation.split('').join('-');
+  const hintBar=()=>{
+    const parts=[];
+    if(S.natDone.size) parts.push(`🌍×${S.natDone.size}`);
+    if(letterTotal) parts.push(`🔤×${letterTotal}`);
+    if(revealCount) parts.push(`👁×${revealCount}`);
+    if(S.wrong) parts.push(`❌×${S.wrong}`);
+    return parts.length?parts.join(' '):'No hints used! 🎯';
+  };
+  // Build Wordle-style grid
+  const grid = S.puzzle.players.map((_,i) => {
+    if(S.revealedPlayers && S.revealedPlayers.has(i)) return '🟥';
+    const hasNat = S.natDone.has(i);
+    const letters = S.lettersRevealed.get(i)||0;
+    if(!hasNat && letters===0) return '🟩'; // clean guess
+    return '🟨'; // used some hints
+  }).join('');
+
+  const shareText=
+`⚽ Lineup Legends
+${S.puzzle.team} · ${S.puzzle.year} · ${fmt}
+
+${grid}
+
+Grade: ${grade.letter} — ${grade.label}
+⏱ ${timeStr}
+🏆 ${finalScore.toLocaleString()}/1,100
+Beat my grade? 👊`;
+
+  document.getElementById('wshare-text').textContent=shareText;
+
+  // Render visual grid
+  const gridEl=document.getElementById('wgrid-display');
+  if(gridEl){
+    // Split into rows of 4 max for readability (GK, then 4+4+etc)
+    const squares=S.puzzle.players.map((_,i)=>{
+      if(S.revealedPlayers&&S.revealedPlayers.has(i)) return '🟥';
+      const hasNat=S.natDone.has(i);
+      const letters=S.lettersRevealed.get(i)||0;
+      return (!hasNat&&letters===0)?'🟩':'🟨';
+    });
+    // Wrap into lines matching formation rows (GK / DEF / MID / FWD)
+    // Simple: one line of 11 squares, wrap after each formation band
+    const layout=S.layout;
+    // Group by approximate y band, then sort each row by x (left→right = pitch layout)
+    const rows=[];
+    let currentRow=[], lastY=null;
+    squares.forEach((sq,i)=>{
+      const y=layout[i]?layout[i].y:50;
+      const x=layout[i]?layout[i].x:50;
+      if(lastY!==null && Math.abs(y-lastY)>8){
+        // Sort current row by x before pushing
+        currentRow.sort((a,b)=>a.x-b.x);
+        rows.push(currentRow.map(e=>e.sq));
+        currentRow=[];
+      }
+      currentRow.push({sq,x}); lastY=y;
+    });
+    if(currentRow.length){
+      currentRow.sort((a,b)=>a.x-b.x);
+      rows.push(currentRow.map(e=>e.sq));
+    }
+    // Reverse so attack is top (as displayed on pitch)
+    gridEl.innerHTML=rows.reverse().map(r=>r.join('')).join('<br>');
+  }
+
+  document.getElementById('win').classList.add('show');
+  }catch(e){
+    console.error('showWin error:',e);
+    // Still show the win overlay even if something in the breakdown fails
+    document.getElementById('win').classList.add('show');
+  }
+}
+
+document.getElementById('share-btn').addEventListener('click',()=>{
+  const text=document.getElementById('wshare-text').textContent;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>toast('Copied to clipboard!','ok'));
+  } else {
+    // Fallback: select the text
+    const el=document.getElementById('wshare-text');
+    const range=document.createRange();
+    range.selectNodeContents(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    toast('Select and copy the text above','info');
+  }
+});
+
+let toastT;
+function toast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=type?`show ${type}`:'show';
+  clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2200);
+}
+
+document.getElementById('gobtn').addEventListener('click',()=>guess(document.getElementById('guess-input').value));
+document.getElementById('guess-input').addEventListener('keydown',e=>{if(e.key==='Enter')guess(e.target.value);});
+document.getElementById('btn-nat').addEventListener('click',doNat);
+document.getElementById('btn-init').addEventListener('click',doInit);
+document.getElementById('reveal-one-btn').addEventListener('click',revealOne);
+
+// Reveal: two-tap pattern since confirm() blocked in iframes
+let revealArmed=false,revealTimer=null;
+document.getElementById('reveal-btn').addEventListener('click',()=>{
+  if(S.done)return;
+  if(!revealArmed){
+    revealArmed=true;
+    document.getElementById('reveal-btn').textContent='⚠️ Tap again to confirm — score goes to 0';
+    revealTimer=setTimeout(()=>{
+      revealArmed=false;
+      document.getElementById('reveal-btn').textContent='👁 Reveal All Names (score resets to 0)';
+    },3000);
+  } else {
+    clearTimeout(revealTimer);
+    revealArmed=false;
+    document.getElementById('reveal-btn').textContent='👁 Reveal All Names (score resets to 0)';
+    revealAll();
+  }
+});
+
+document.getElementById('again-btn').addEventListener('click',showPicker);
+
+// ── PUZZLE PICKER ──
+const COMP_ICONS = {
+  'Champions League':'⭐','Premier League':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','European Championship':'🌍',
+  'World Cup':'🌎','La Liga':'🇪🇸','La Liga':'🇪🇸'
+};
+const COMP_ORDER = ['Champions League','Premier League','European Championship','World Cup','La Liga'];
+
+function showPicker(){
+  clearInterval(scoreTimer);
+  document.getElementById('picker').classList.remove('hidden');
+  buildPickerList();
+}
+
+function hidePicker(){
+  document.getElementById('picker').classList.add('hidden');
+}
+
+function buildPickerList(){
+  const scroll = document.getElementById('picker-scroll');
+  scroll.innerHTML = '';
+
+  // Group puzzles by competition
+  const groups = new Map();
+  PUZZLES.forEach(p => {
+    if(!groups.has(p.competition)) groups.set(p.competition, []);
+    groups.get(p.competition).push(p);
+  });
+
+  // Render in competition order
+  const ordered = [...COMP_ORDER.filter(c => groups.has(c)),
+                   ...[...groups.keys()].filter(c => !COMP_ORDER.includes(c))];
+
+  ordered.forEach(comp => {
+    const puzzles = groups.get(comp);
+    const grp = document.createElement('div');
+    grp.className = 'picker-group';
+    grp.innerHTML = `<div class="picker-group-title">${COMP_ICONS[comp]||'🏆'} ${comp}</div>`;
+
+    puzzles.forEach(p => {
+      const fmt = p.formation.split('').join('-');
+      const card = document.createElement('div');
+      card.className = 'pcard';
+      card.innerHTML = `
+        <div class="pcard-badge">${teamEmoji(p.team)}</div>
+        <div class="pcard-info">
+          <div class="pcard-team">${p.team} <span style="color:var(--muted);font-weight:600">'${String(p.year).slice(2)}</span></div>
+          <div class="pcard-meta">${fmt} &nbsp;·&nbsp; ${p.year}</div>
+          <div class="pcard-match">${p.match}</div>
+        </div>
+        <div class="pcard-arrow">›</div>`;
+      card.addEventListener('click', () => { hidePicker(); init(p); });
+      grp.appendChild(card);
+    });
+    scroll.appendChild(grp);
+  });
+}
+
+function teamEmoji(team){
+  const map = {
+    'Arsenal':'🔴','Liverpool':'🔴','Manchester United':'🔴',
+    'Chelsea':'🔵','Manchester City':'🔵','Leicester City':'🔵',
+    'Leeds United':'💛','Barcelona':'🔵','Real Madrid':'⚪',
+    'AC Milan':'🔴','Bayern Munich':'🔴','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  };
+  return map[team] || '⚽';
+}
+
+document.getElementById('back-btn').addEventListener('click', showPicker);
+document.getElementById('picker-random').addEventListener('click', () => {
+  const p = PUZZLES[Math.floor(Math.random()*PUZZLES.length)];
+  hidePicker(); init(p);
+});
+
+// ── LEADERBOARD (Supabase) ──
+const SB_URL='https://ecjrsjxvdtmvtgygnwxd.supabase.co';
+const SB_KEY='sb_publishable_Jp_tM72yApuwyCSS-A5YNg_9C6meVX1';
+
+async function sbFetch(path,method='GET',body=null){
+  const opts={method,headers:{
+    'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,
+    'Content-Type':'application/json','Prefer':method==='POST'?'return=minimal':''
+  }};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(SB_URL+path,opts);
+  if(!r.ok)throw new Error(await r.text());
+  return method==='GET'?r.json():true;
+}
+
+async function submitScore(){
+  const nameEl=document.getElementById('wname-input');
+  const msgEl=document.getElementById('wsubmit-msg');
+  const name=nameEl.value.trim();
+  if(!name){nameEl.focus();msgEl.textContent='Enter your name first';return;}
+  const btn=document.getElementById('submit-score-btn');
+  btn.disabled=true;btn.textContent='Saving…';
+  const grade=getGrade(S.score);
+  try{
+    await sbFetch('/rest/v1/scores','POST',{
+      name,
+      puzzle_id:S.puzzle.id,
+      puzzle_label:`${S.puzzle.team} ${S.puzzle.year}`,
+      score:S.score,
+      grade:grade.letter,
+      time_seconds:Math.round((Date.now()-S.start)/1000),
+      hints_used:S.natDone.size+Array.from(S.lettersRevealed.values()).reduce((a,b)=>a+b,0)
+    });
+    msgEl.textContent='✓ Score on the board!';
+    btn.textContent='✓ Submitted';
+    nameEl.disabled=true;
+  }catch(e){
+    console.error('Submit error:',e);
+    msgEl.textContent='Could not save — check connection';
+    btn.disabled=false;btn.textContent='Try Again';
+  }
+}
+
+async function openLeaderboard(){
+  const overlay=document.getElementById('lb-overlay');
+  overlay.classList.add('show');
+  document.getElementById('lb-list').innerHTML='';
+  document.getElementById('lb-empty').style.display='none';
+  document.getElementById('lb-tabs').innerHTML='<span style="color:var(--muted);font-size:0.75rem;padding:4px 8px">Loading…</span>';
+  try{
+    const data=await sbFetch('/rest/v1/scores?select=*&order=score.desc&limit=200');
+    const puzzleMap=new Map();
+    data.forEach(e=>{if(!puzzleMap.has(e.puzzle_id))puzzleMap.set(e.puzzle_id,e.puzzle_label);});
+    const tabsEl=document.getElementById('lb-tabs');
+    tabsEl.innerHTML='';
+    const mkTab=(label,pid)=>{
+      const t=document.createElement('button');
+      t.className='lb-tab';t.textContent=label;
+      t.onclick=()=>{tabsEl.querySelectorAll('.lb-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');renderLbList(data,pid);};
+      tabsEl.appendChild(t);return t;
+    };
+    mkTab('All',null).classList.add('active');
+    [...puzzleMap.entries()].sort((a,b)=>a[0]-b[0]).forEach(([pid,label])=>mkTab(label,pid));
+    const curTab=[...tabsEl.querySelectorAll('.lb-tab')].find(t=>t.textContent===`${S.puzzle.team} ${S.puzzle.year}`);
+    if(curTab&&data.some(e=>e.puzzle_id===S.puzzle.id)){curTab.click();}
+    else renderLbList(data,null);
+  }catch(e){
+    console.error('Leaderboard error:',e);
+    document.getElementById('lb-list').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:0.82rem;line-height:1.5">Could not load scores — check connection</div>';
+    document.getElementById('lb-tabs').innerHTML='';
+  }
+}
+
+function renderLbList(data,puzzleId){
+  const filtered=puzzleId!==null?data.filter(e=>e.puzzle_id===puzzleId):data;
+  const best=new Map();
+  filtered.forEach(e=>{const k=`${e.name}:${e.puzzle_id}`;if(!best.has(k)||e.score>best.get(k).score)best.set(k,e);});
+  const sorted=[...best.values()].sort((a,b)=>b.score-a.score).slice(0,25);
+  const list=document.getElementById('lb-list');
+  const empty=document.getElementById('lb-empty');
+  list.innerHTML='';
+  if(!sorted.length){empty.style.display='block';return;}
+  empty.style.display='none';
+  const medals=['🥇','🥈','🥉'];
+  sorted.forEach((e,idx)=>{
+    const row=document.createElement('div');
+    row.className='lb-row';
+    const mins=Math.floor(e.time_seconds/60),secs=e.time_seconds%60;
+    const timeStr=mins>0?`${mins}m ${secs}s`:`${secs}s`;
+    const showPuzzle=puzzleId===null?`${e.puzzle_label} · `:'';
+    row.innerHTML=`
+      <div class="lb-rank">${medals[idx]||idx+1}</div>
+      <div class="lb-info">
+        <div class="lb-name">${e.name}</div>
+        <div class="lb-meta">${showPuzzle}${timeStr} · Grade ${e.grade}</div>
+      </div>
+      <div class="lb-score">${e.score.toLocaleString()}</div>`;
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('submit-score-btn').addEventListener('click',submitScore);
+document.getElementById('wname-input').addEventListener('keydown',e=>{if(e.key==='Enter')submitScore();});
+document.getElementById('view-lb-btn').addEventListener('click',openLeaderboard);
+document.getElementById('lb-close').addEventListener('click',()=>document.getElementById('lb-overlay').classList.remove('show'));
+
+// Show picker on load
+showPicker();
+</script>
+</body>
+</html>
