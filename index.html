@@ -528,7 +528,7 @@ header{
 <script>
 // ── SUPABASE ── (defined first so all functions can use it)
 const SB_URL='https://ecjrsjxvdtmvtgygnwxd.supabase.co';
-const SB_KEY='sb_publishable_Jp_tM72yApuwyCSS-A5YNg_9C6meVX1';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjanJzanh2ZHRtdnRneWdud3hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MjQ4NjAsImV4cCI6MjA5NzEwMDg2MH0.hy0tXkSxRLEN18xnYTke3qh_FfOJ5P4Bn6ARvdCe-_Y';
 async function sbFetch(path,method='GET',body=null){
   const opts={method,headers:{
     'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,
@@ -1878,3 +1878,4 @@ if(challengeParam){
 </script>
 </body>
 </html>
+
