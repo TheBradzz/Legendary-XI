@@ -446,6 +446,15 @@ header{
     </div>
   </div>
   <div id="picker-tagline-row">Choose a lineup to guess</div>
+  <div id="picker-league-banner" style="display:none;margin:6px 12px 0;padding:8px 12px;background:rgba(181,255,77,0.08);border:1px solid rgba(181,255,77,0.2);border-radius:10px;cursor:pointer" onclick="updateGroupTab();openLeaderboard()">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div id="plb-name" style="font-family:var(--fh);font-size:0.9rem;font-weight:800;color:var(--lime)">🏆 My League</div>
+        <div id="plb-sub" style="font-size:0.65rem;color:var(--muted);margin-top:1px">Tap to see standings</div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted)">›</div>
+    </div>
+  </div>
   <div id="picker-stats-bar" style="display:none;padding:6px 14px 8px;font-size:0.72rem;border-bottom:1px solid rgba(255,255,255,0.05);gap:14px;align-items:center"></div>
   <div id="picker-scroll"></div>
 </div>
@@ -529,8 +538,8 @@ header{
     </div>
     <!-- Name entry — appears when Share tapped -->
     <div id="wname-screen" style="display:none">
-      <div style="font-family:var(--fh);font-size:1.1rem;font-weight:800;color:var(--white);margin-bottom:6px">Save &amp; challenge your mates 👊</div>
-      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:16px">Your name goes on the group leaderboard</div>
+      <div id="wname-screen-title" style="font-family:var(--fh);font-size:1.1rem;font-weight:800;color:var(--white);margin-bottom:6px">Save &amp; challenge your mates 👊</div>
+      <div id="wname-screen-sub" style="font-size:0.72rem;color:var(--muted);margin-bottom:16px">Your name goes on the group leaderboard</div>
       <div id="wname-row">
         <input id="wname-input" type="text" placeholder="Your name…" maxlength="20"
           autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"/>
@@ -1592,6 +1601,27 @@ legendary-xi.vercel.app`;
   // Show results immediately
   const rs=document.getElementById('wresults-screen');const ns=document.getElementById('wname-screen');
   if(rs)rs.style.display='block';if(ns)ns.style.display='none';
+  // Update name screen copy based on context
+  const titleEl=document.getElementById('wname-screen-title');
+  const subEl=document.getElementById('wname-screen-sub');
+  const myLgWin=getMyLeague();
+  const inLeague=challengeParam&&challengeParam.groupId||myLgWin;
+  if(titleEl){
+    if(challengeParam&&challengeParam.groupId){
+      titleEl.textContent="You're in "+challengeParam.name+"'s league 🏆";
+    } else if(myLgWin){
+      titleEl.textContent='Save to '+myLgWin.name+' 🏆';
+    } else {
+      titleEl.textContent='Save & challenge your mates 👊';
+    }
+  }
+  if(subEl){
+    if(inLeague){
+      subEl.textContent='Enter your name to save your score to the group standings';
+    } else {
+      subEl.textContent='Your name goes on the leaderboard';
+    }
+  }
   const ni=document.getElementById('wname-input');if(ni){ni.value='';ni.disabled=false;}
   const sm=document.getElementById('wsubmit-msg');if(sm)sm.textContent='';
   const sb=document.getElementById('submit-score-btn');if(sb){sb.disabled=false;sb.textContent='Go →';}
@@ -1646,6 +1676,28 @@ function hidePicker(){
 }
 
 function buildPickerList(){
+  // League banner
+  const myLgPicker=getMyLeague();
+  const leagueBanner=document.getElementById('picker-league-banner');
+  const plbName=document.getElementById('plb-name');
+  const plbSub=document.getElementById('plb-sub');
+  if(leagueBanner&&myLgPicker){
+    leagueBanner.style.display='block';
+    if(plbName) plbName.textContent='🏆 '+myLgPicker.name;
+    if(plbSub){
+      // Try to show member count from leaderboard data
+      if(typeof lbData!=='undefined'&&lbData.length){
+        const members=new Set(lbData.filter(e=>e.group_id===myLgPicker.id).map(e=>e.name));
+        const count=members.size;
+        plbSub.textContent=count>0?`${count} player${count!==1?'s':''} · Tap to see standings`:'Tap to see standings';
+      } else {
+        plbSub.textContent='Tap to see standings';
+      }
+    }
+  } else if(leagueBanner){
+    leagueBanner.style.display='none';
+  }
+
   // Stats bar
   const summary=getSummaryStats();
   const bar=document.getElementById('picker-stats-bar');
