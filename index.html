@@ -217,6 +217,8 @@ header{
   display:flex;
   gap:0;
 }
+#guess-input::-webkit-search-cancel-button{display:none}
+#guess-input::-webkit-search-decoration{display:none}
 #guess-input{
   flex:1;
   background:transparent;
@@ -489,9 +491,10 @@ header{
   <div id="bottom-chrome">
     <div id="action-box">
       <div id="input-row">
-        <input id="guess-input" type="text" placeholder="Type a surname…"
-          autocomplete="new-password" autocorrect="off" autocapitalize="none"
-          spellcheck="false" inputmode="text" name="search"/>
+        <input id="guess-input" type="search" placeholder="Type a surname…"
+          autocomplete="off" autocorrect="off" autocapitalize="none"
+          spellcheck="false" inputmode="text"
+          name="lxi-guess-x9k" aria-label="Player surname"/>
         <button id="gobtn">GO</button>
       </div>
     </div>
@@ -530,7 +533,8 @@ header{
       </div>
       <div id="quick-save-msg" style="font-size:0.68rem;color:var(--muted);text-align:center;min-height:14px;margin-bottom:4px"></div>
       <div id="challenge-nudge">Think your mates can beat that? 👀</div>
-      <button class="wbtn wbtn-challenge" id="challenge-btn" style="width:100%;margin-bottom:10px">⚔️ Challenge Friends</button>
+      <button class="wbtn wbtn-challenge" id="challenge-btn" style="width:100%;margin-bottom:8px">⚔️ Challenge Friends</button>
+      <button class="wbtn wbtn-card" id="share-card-btn" style="width:100%;margin-bottom:10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:var(--white)">🖼️ Share Results Card</button>
       <div class="wbtns">
         <button class="wbtn wbtn-lb" id="view-lb-btn">🏅 Board</button>
         <button class="wbtn wbtn-play" id="again-btn">▶ More Lineups</button>
@@ -1657,6 +1661,7 @@ document.getElementById('reveal-one-btn').addEventListener('click',revealOne);
 // Reveal All removed — players use individual reveal instead
 
 document.getElementById('again-btn').addEventListener('click',showPicker);
+document.getElementById('share-card-btn').addEventListener('click',generateShareCard);
 
 // ── PUZZLE PICKER ──
 const COMP_ICONS = {
@@ -2104,6 +2109,166 @@ function buildChallengeUrl(){
   if(!S.groupId)S.groupId=makeGroupId();
   const params=new URLSearchParams({c:S.puzzle.id,s:S.score,g:grade.letter,n:encodeURIComponent(name),t:elapsed,grp:S.groupId});
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+}
+
+function generateShareCard(){
+  // Build a 1080x1080 canvas share card
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1080;
+  const ctx = canvas.getContext('2d');
+
+  const navy = '#0d1b2a';
+  const lime = '#b5ff4d';
+  const white = '#ffffff';
+  const muted = '#4a6572';
+
+  // Background
+  ctx.fillStyle = navy;
+  ctx.fillRect(0, 0, 1080, 1080);
+
+  // Lime accent bar top
+  ctx.fillStyle = lime;
+  ctx.fillRect(0, 0, 1080, 8);
+
+  // Grade — big centred
+  const grade = getGrade(S.score);
+  const gradeColors = {S:'#FFD700',A:lime,B:'#5bc8ff',C:'#ff9f1c',D:'#ff9f1c',F:'#ff5c5c'};
+  const gradeColor = gradeColors[grade.letter] || lime;
+
+  // Crown + Logo top left
+  ctx.fillStyle = lime;
+  ctx.font = 'bold 52px sans-serif';
+  ctx.fillText('👑', 60, 100);
+  ctx.fillStyle = white;
+  ctx.font = 'bold 56px sans-serif';
+  ctx.fillText('Legendary', 60, 160);
+  ctx.fillStyle = lime;
+  ctx.font = 'bold 80px sans-serif';
+  ctx.fillText('XI', 60, 250);
+
+  // Team + year right-aligned
+  ctx.fillStyle = white;
+  ctx.font = 'bold 48px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(S.puzzle.team, 1020, 160);
+  ctx.fillStyle = muted;
+  ctx.font = '36px sans-serif';
+  ctx.fillText(S.puzzle.year + ' · ' + S.puzzle.formation, 1020, 210);
+  ctx.textAlign = 'left';
+
+  // Divider line
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();ctx.moveTo(60,280);ctx.lineTo(1020,280);ctx.stroke();
+
+  // Wordle grid — formation rows
+  const layout = S.layout;
+  const players = S.puzzle.players;
+  // Group into formation rows
+  const rows = [];
+  let curRow = [], lastY = null;
+  players.forEach((_,i)=>{
+    const y = layout[i]?layout[i].y:50;
+    const x = layout[i]?layout[i].x:50;
+    if(lastY!==null && Math.abs(y-lastY)>8){
+      curRow.sort((a,b)=>a.x-b.x);
+      rows.push(curRow);
+      curRow=[];
+    }
+    const sq = S.revealedPlayers&&S.revealedPlayers.has(i)?'🟥':
+               (S.natDone.has(i)||(S.lettersRevealed.get(i)||0)>0)?'🟨':'🟩';
+    curRow.push({sq,x}); lastY=y;
+  });
+  if(curRow.length){curRow.sort((a,b)=>a.x-b.x);rows.push(curRow);}
+  rows.reverse(); // attack at top
+
+  // Draw grid squares
+  const sqSize = 90;
+  const sqGap = 12;
+  const gridTop = 320;
+  const sqColors = {'🟩':'#4a9c59','🟨':'#c9a227','🟥':'#c0392b'};
+
+  rows.forEach((row, ri)=>{
+    const rowW = row.length * sqSize + (row.length-1) * sqGap;
+    const startX = (1080 - rowW) / 2;
+    const y = gridTop + ri * (sqSize + sqGap);
+    row.forEach((item, ci)=>{
+      const x = startX + ci * (sqSize + sqGap);
+      ctx.fillStyle = sqColors[item.sq] || '#333';
+      ctx.beginPath();
+      ctx.roundRect(x, y, sqSize, sqSize, 12);
+      ctx.fill();
+    });
+  });
+
+  // Grade block — bottom section
+  const gradeY = gridTop + rows.length * (sqSize + sqGap) + 60;
+
+  // Big grade letter
+  ctx.fillStyle = gradeColor;
+  ctx.font = 'bold 200px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(grade.letter, 300, gradeY + 180);
+
+  // Score + time right
+  ctx.fillStyle = white;
+  ctx.font = 'bold 80px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(S.score.toLocaleString()+'pts', 1020, gradeY + 80);
+  const elapsed = S.start?Math.round((Date.now()-S.start)/1000):0;
+  const mins = Math.floor(elapsed/60), secs = elapsed%60;
+  const tStr = mins>0?`${mins}m ${secs}s`:`${secs}s`;
+  ctx.fillStyle = muted;
+  ctx.font = '42px sans-serif';
+  ctx.fillText('⏱ '+tStr, 1020, gradeY + 140);
+
+  // Grade label
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '36px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(grade.label, 540, gradeY + 240);
+
+  // CTA
+  ctx.fillStyle = white;
+  ctx.font = 'bold 44px sans-serif';
+  ctx.fillText('Can you beat that? 👊', 540, gradeY + 320);
+
+  // URL bottom
+  ctx.fillStyle = muted;
+  ctx.font = '34px sans-serif';
+  ctx.fillText('legendary-xi.vercel.app', 540, 1040);
+
+  // Lime bottom bar
+  ctx.fillStyle = lime;
+  ctx.fillRect(0, 1072, 1080, 8);
+
+  // Convert to blob and share
+  canvas.toBlob(async (blob)=>{
+    const name = S.playerName||'result';
+    const file = new File([blob], `legendary-xi-${name}.png`, {type:'image/png'});
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({
+          files:[file],
+          title:'Legendary XI',
+          text:`I got Grade ${grade.letter} on ${S.puzzle.team} ${S.puzzle.year}! Can you beat it?`
+        });
+      }catch(e){
+        // Fallback: download the image
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href=url; a.download=`legendary-xi.png`; a.click();
+        URL.revokeObjectURL(url);
+      }
+    } else {
+      // Download fallback
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download=`legendary-xi.png`; a.click();
+      URL.revokeObjectURL(url);
+    }
+  },'image/png');
 }
 
 async function generateChallenge(){
