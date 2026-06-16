@@ -565,6 +565,17 @@ header{
 <div id="toast"></div>
 
 <script>
+// ── LEAGUE SYSTEM ──
+const LEAGUE_KEY='lxi_league_v1';
+function getMyLeague(){try{return JSON.parse(localStorage.getItem(LEAGUE_KEY)||'null');}catch(e){return null;}}
+function setMyLeague(id,name,role){try{localStorage.setItem(LEAGUE_KEY,JSON.stringify({id,name,role}));}catch(e){}}
+async function createLeague(name,createdBy){
+  const id=Math.random().toString(36).slice(2,5).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase();
+  try{await sbFetch('/rest/v1/leagues','POST',{id,name,created_by:createdBy});}catch(e){}
+  setMyLeague(id,name,'owner');return{id,name};
+}
+function joinLeague(id,name){const ex=getMyLeague();if(!ex||ex.role!=='owner')setMyLeague(id,name,'member');}
+
 // ── PERSONAL STATS (localStorage) ──
 const STATS_KEY='lxi_stats_v1';
 function loadStats(){try{const r=localStorage.getItem(STATS_KEY);return r?JSON.parse(r):{}}catch(e){return {}}}
@@ -1818,7 +1829,8 @@ function renderGroupLb(data,groupId){
   const medals=['🥇','🥈','🥉'];
   const header=document.createElement('div');
   header.style.cssText='font-family:var(--fh);font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;padding:8px 4px 12px';
-  header.textContent=`Group · ${grouped[0]?.puzzle_label||''} · ${sorted.length} player${sorted.length!==1?'s':''}`;
+  const myLgG=getMyLeague();const lgTitle=myLgG?myLgG.name:'Group';
+  header.textContent=`${lgTitle} · ${sorted.length} player${sorted.length!==1?'s':''}`;
   list.appendChild(header);
   sorted.forEach((e,idx)=>{
     const row=document.createElement('div');
@@ -1839,7 +1851,8 @@ function renderGroupLb(data,groupId){
 
 function updateGroupTab(){
   const btn=document.getElementById('tab-group');
-  if(btn)btn.style.display=S.groupId?'flex':'none';
+  const myLgU=getMyLeague();
+  if(btn)btn.style.display=(S.groupId||myLgU)?'flex':'none';
 }
 
 async function openLeaderboard(){
@@ -1853,12 +1866,15 @@ async function openLeaderboard(){
 
   try{
     lbData=await sbFetch('/rest/v1/scores?select=*&order=score.desc&limit=500');
-    if(S.groupId){
+    const myLgLB=getMyLeague();
+    const activeGrp=S.groupId||(myLgLB?myLgLB.id:null);
+    if(activeGrp){
+      S.groupId=activeGrp;
       lbMode='group';
       document.getElementById('tab-group').classList.add('active');
       document.getElementById('tab-lineup').classList.remove('active');
       document.getElementById('tab-overall').classList.remove('active');
-      renderGroupLb(lbData,S.groupId);
+      renderGroupLb(lbData,activeGrp);
     } else {
       // Default: show overall leaderboard immediately, no extra click needed
       lbMode='overall';
@@ -1897,7 +1913,7 @@ function renderOverall(){
 }
 
 // Per lineup leaderboard — best score per person per puzzle
-function renderByLineup(puzzleId){
+function renderByLineup(puzzleId,rawData){
   const filtered=puzzleId?lbData.filter(e=>e.puzzle_id===puzzleId):lbData;
   const best=new Map();
   filtered.forEach(e=>{
@@ -1907,24 +1923,38 @@ function renderByLineup(puzzleId){
   const sorted=[...best.values()].sort((a,b)=>b.score-a.score||((a.time_seconds||9999)-(b.time_seconds||9999))).slice(0,25);
   renderRows(sorted,
     e=>{const m=Math.floor(e.time_seconds/60),s=e.time_seconds%60;return (m>0?`${m}m ${s}s`:`${s}s`)+` · Grade ${e.grade}`;},
-    e=>e.score.toLocaleString()
+    e=>e.score.toLocaleString(),
+    rawData||filtered
   );
 }
 
-function renderRows(sorted, metaFn, scoreFn){
+function getGradeDist(data){
+  const counts={S:0,A:0,B:0,C:0,D:0,F:0};
+  data.forEach(e=>{if(e.grade in counts)counts[e.grade]++;});
+  const total=data.length;if(!total)return '';
+  const gc={S:'#FFD700',A:'#b5ff4d',B:'#5bc8ff',C:'#ff9f1c',D:'#ff9f1c',F:'#ff5c5c'};
+  return '<div style="display:flex;padding:6px 0 10px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:4px">'+
+    Object.entries(counts).filter(([,n])=>n>0).map(([g,n])=>
+      `<div style="flex:1;text-align:center"><div style="font-family:var(--fh);font-size:0.9rem;font-weight:800;color:${gc[g]}">${g}</div><div style="font-size:0.62rem;color:var(--muted)">${Math.round(n/total*100)}%</div></div>`
+    ).join('')+'</div>';
+}
+
+function renderRows(sorted, metaFn, scoreFn, rawData){
   const list=document.getElementById('lb-list');
   const empty=document.getElementById('lb-empty');
   list.innerHTML='';
   if(!sorted.length){empty.style.display='block';return;}
   empty.style.display='none';
+  if(rawData&&rawData.length){const d=document.createElement('div');d.innerHTML=getGradeDist(rawData);list.appendChild(d);}
   const medals=['🥇','🥈','🥉'];
   sorted.forEach((e,idx)=>{
     const row=document.createElement('div');
     row.className='lb-row';
+    const isMe=e.name===(S.playerName||'');
     row.innerHTML=`
       <div class="lb-rank">${medals[idx]||idx+1}</div>
       <div class="lb-info">
-        <div class="lb-name">${e.name}</div>
+        <div class="lb-name" style="${isMe?'color:var(--lime)':''}">${e.name}${isMe?' 👈':''}</div>
         <div class="lb-meta">${metaFn(e)}</div>
       </div>
       <div class="lb-score">${scoreFn(e)}</div>`;
@@ -2024,8 +2054,16 @@ function buildChallengeUrl(){
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }
 
-function generateChallenge(){
+async function generateChallenge(){
   const name=S.playerName||'Someone';
+  // Create or use existing league
+  let myLg=getMyLeague();
+  if(!myLg){
+    const lname=prompt("Name your league! 🏆\n(e.g. \"The Pub Quiz XI\")",name+"'s League");
+    if(lname) myLg=await createLeague(lname.trim(),name);
+  }
+  if(myLg) S.groupId=myLg.id;
+  else if(!S.groupId) S.groupId=Math.random().toString(36).slice(2,8).toUpperCase();
   const grade=getGrade(S.score);
   const elapsed=S.start?Math.round((Date.now()-S.start)/1000):0;
   const mins=Math.floor(elapsed/60),secs=elapsed%60;
@@ -2033,7 +2071,6 @@ function generateChallenge(){
   const stars='⭐'.repeat(S.puzzle.difficulty||3);
 
   // Build challenge URL with puzzle id, score, grade, time, name
-  if(!S.groupId) S.groupId=Math.random().toString(36).slice(2,8).toUpperCase();
   const params=new URLSearchParams({
     c:S.puzzle.id,
     s:S.score,
@@ -2147,7 +2184,10 @@ function soundWrong(){playTone(180,0.12,'sawtooth',0.06);}
 function soundWin(){[523,587,659,698,784,880].forEach((f,i)=>setTimeout(()=>playTone(f,0.18),i*70));}
 function soundHint(){playTone(440,0.08,'sine',0.06);}
 
-// On load — check for challenge link, else show picker
+// On load — check for league join + challenge params
+const urlP=new URLSearchParams(window.location.search);
+const joinId=urlP.get('join'),joinName=urlP.get('ln');
+if(joinId&&joinName){joinLeague(joinId,decodeURIComponent(joinName));S.groupId=joinId;}
 const challengeParam=checkChallengeParam();
 if(challengeParam){
   const puzzle=PUZZLES.find(p=>p.id===challengeParam.puzzleId);
