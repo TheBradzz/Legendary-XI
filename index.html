@@ -1771,21 +1771,27 @@ function buildChallengeUrl(){
 }
 
 function generateChallenge(){
-  try{
-    const name=S.playerName||'Someone';
-    const url='https://lineuplegends.netlify.app';
-    const shareText='⚽ Lineup Legends\n'+name+' challenges you — can you beat their score?\n\n'+url;
-    if(navigator.share){
-      navigator.share({title:'Lineup Legends',text:shareText}).catch(err=>{
-        if(navigator.clipboard){navigator.clipboard.writeText(shareText).then(()=>toast('Copied!','ok'));}
+  const name=S.playerName||'Someone';
+  const url='https://lineuplegends.netlify.app';
+  const shareText='⚽ Lineup Legends\n'+name+' challenges you!\n\n'+url;
+  
+  const hasShare=!!navigator.share;
+  const hasClip=!!navigator.clipboard;
+  
+  // Show what API is available
+  toast(hasShare?'Sharing...':hasClip?'Copying...':'No share API','ok');
+  
+  if(hasShare){
+    navigator.share({title:'Lineup Legends',text:shareText})
+      .then(()=>toast('Shared!','ok'))
+      .catch(err=>{
+        toast('Share cancelled/failed','ok');
+        if(hasClip) navigator.clipboard.writeText(shareText).then(()=>toast('Copied instead!','ok'));
       });
-    } else if(navigator.clipboard){
-      navigator.clipboard.writeText(shareText).then(()=>toast('Copied!','ok'));
-    } else {
-      prompt('Copy link:',url);
-    }
-  }catch(e){
-    toast('Share error: '+e.message,'bad');
+  } else if(hasClip){
+    navigator.clipboard.writeText(shareText).then(()=>toast('Copied to clipboard!','ok'));
+  } else {
+    alert('Challenge link:\n'+url);
   }
 }
 
