@@ -1772,49 +1772,23 @@ function buildChallengeUrl(){
 
 function generateChallenge(){
   try{
-    const url=buildChallengeUrl();
-    const grade=getGrade(S.score);
-    const name=S.playerName||'';
-    const elapsed=S.start?Math.round((Date.now()-S.start)/1000):0;
-    const mins=Math.floor(elapsed/60),secs=elapsed%60;
-    const tStr=mins>0?`${mins}m ${secs}s`:`${elapsed}s`;
-    const stars='⭐'.repeat(S.puzzle.difficulty||3);
-    const challenger=name||'Someone';
-    const flatGrid=S.puzzle.players.map((_,i)=>{
-      if(S.revealedPlayers&&S.revealedPlayers.has(i))return'🟥';
-      return(S.natDone.has(i)||(S.lettersRevealed.get(i)||0)>0)?'🟨':'🟩';
-    }).join('');
-    const trashLines=[
-      `${challenger} got Grade ${grade.letter} on ${S.puzzle.team} ${S.puzzle.year} in ${tStr}. Think you can do better? 😂`,
-      `${challenger} smashed ${S.puzzle.team} ${S.puzzle.year} in ${tStr}. Don't embarrass yourself 👀`,
-      `Grade ${grade.letter}. ${S.score.toLocaleString()}pts. ${tStr}. ${challenger} is waiting 😤`,
-      `${challenger} completed ${S.puzzle.team} ${S.puzzle.year} in ${tStr}. Your move 👊`,
-    ];
-    const trash=trashLines[Math.floor(Math.random()*trashLines.length)];
-    const shareText=`⚽ Lineup Legends #${S.puzzle.id}
-${S.puzzle.team} ${S.puzzle.year} ${stars}
-
-${flatGrid}
-
-${trash}
-
-👥 Beat me:
-${url}`;
-
+    const name=S.playerName||'Someone';
+    const url='https://lineuplegends.netlify.app';
+    const shareText='⚽ Lineup Legends\n'+name+' challenges you — can you beat their score?\n\n'+url;
     if(navigator.share){
-      navigator.share({title:'Lineup Legends',text:shareText}).catch(()=>{
-        if(navigator.clipboard) navigator.clipboard.writeText(shareText).then(()=>toast('Copied!','ok'));
+      navigator.share({title:'Lineup Legends',text:shareText}).catch(err=>{
+        if(navigator.clipboard){navigator.clipboard.writeText(shareText).then(()=>toast('Copied!','ok'));}
       });
     } else if(navigator.clipboard){
-      navigator.clipboard.writeText(shareText).then(()=>toast('Link copied!','ok'));
+      navigator.clipboard.writeText(shareText).then(()=>toast('Copied!','ok'));
     } else {
-      prompt('Copy your challenge link:',url);
+      prompt('Copy link:',url);
     }
-  }catch(err){
-    console.error('generateChallenge error:',err);
-    toast('Could not share — try again','bad');
+  }catch(e){
+    toast('Share error: '+e.message,'bad');
   }
 }
+
 
 function checkChallengeParam(){
   const p=new URLSearchParams(window.location.search);
