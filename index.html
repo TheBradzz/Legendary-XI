@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"/>
 <title>Legendary XI</title>
 
 <!-- Open Graph — controls preview in WhatsApp, iMessage, Twitter, Facebook -->
@@ -67,8 +67,9 @@ header{
   padding:10px 12px 8px;
   border-bottom:1px solid rgba(255,255,255,0.07);
 }
-.logo{font-family:var(--fh);font-weight:800;font-size:1.5rem;line-height:1}
-.logo span{color:var(--lime)}
+.logo{font-family:var(--fh);font-weight:800;line-height:1;display:block}
+.logo-legendary{font-size:1.1rem;color:var(--white);letter-spacing:-0.3px;display:block}
+.logo-xi{font-size:1.8rem;color:var(--lime);letter-spacing:-1px;display:block;margin-top:-2px}
 #back-btn{
   background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
   border-radius:8px;color:var(--muted);font-family:var(--fb);font-size:0.72rem;
@@ -384,8 +385,9 @@ header{
 #picker.hidden{display:none}
 #picker-header{padding:12px 14px 8px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
 #picker-tagline-row{padding:6px 14px 2px;font-size:0.72rem;color:var(--muted)}
-#picker-logo{font-family:var(--fh);font-weight:800;font-size:1.6rem;line-height:1}
-#picker-logo span{color:var(--lime)}
+#picker-logo{font-family:var(--fh);font-weight:800;line-height:1}
+#picker-logo .logo-legendary{font-size:1.5rem;color:var(--white);letter-spacing:-0.3px;display:block}
+#picker-logo .logo-xi{font-size:2.4rem;color:var(--lime);letter-spacing:-1px;display:block;margin-top:-3px}
 #picker-tagline{font-size:0.7rem;color:var(--muted);margin-top:2px}
 #picker-lb-btn{background:rgba(255,180,0,0.12);color:rgba(255,210,80,0.95);border:1px solid rgba(255,180,0,0.3);border-radius:10px;padding:8px 12px;font-size:1rem;cursor:pointer}
 #picker-lb-btn:active{background:rgba(255,180,0,0.22)}
@@ -437,20 +439,21 @@ header{
 <body>
 <div id="picker">
   <div id="picker-header">
-    <div id="picker-logo">Legendary<span>XI</span></div>
+    <div id="picker-logo"><span class="logo-legendary">Legendary</span><span class="logo-xi">XI</span></div>
     <div style="display:flex;gap:8px;align-items:center">
       <button id="picker-lb-btn">🏅 Leaderboard</button>
       <button id="picker-share">📤 Share</button>
     </div>
   </div>
   <div id="picker-tagline-row">Choose a lineup to guess</div>
+  <div id="picker-stats-bar" style="display:none;padding:6px 14px 8px;font-size:0.72rem;border-bottom:1px solid rgba(255,255,255,0.05);gap:14px;align-items:center"></div>
   <div id="picker-scroll"></div>
 </div>
 
 <div id="score-flash"></div>
 <div id="app">
   <header>
-    <div class="logo">Legendary<span>XI</span></div>
+    <div class="logo"><span class="logo-legendary">Legendary</span><span class="logo-xi">XI</span></div>
     <button id="back-btn">⚽ Lineups</button>
   </header>
   <div id="scorebar">
@@ -478,8 +481,8 @@ header{
     <div id="action-box">
       <div id="input-row">
         <input id="guess-input" type="text" placeholder="Type a surname…"
-          autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
-          autocomplete="new-password" inputmode="text"/>
+          autocomplete="new-password" autocorrect="off" autocapitalize="none"
+          spellcheck="false" inputmode="text" name="search"/>
         <button id="gobtn">GO</button>
       </div>
     </div>
@@ -509,6 +512,14 @@ header{
       <div class="wstats-row"><div class="wstat-pill" id="wt">⏱ -</div></div>
       <div class="wpenalty-row" id="wpenalty-row"></div>
       <div class="wshare" id="wshare-text"></div>
+      <!-- Quick save row -->
+      <div id="quick-save-row" style="display:flex;gap:8px;margin:8px 0 4px">
+        <input id="quick-name-input" type="text" placeholder="Save your score…" maxlength="20"
+          autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"
+          style="flex:1;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:10px;color:var(--white);font-family:var(--fb);font-size:0.85rem;padding:8px 12px;outline:none;min-width:0"/>
+        <button id="quick-save-btn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:var(--white);font-family:var(--fh);font-weight:700;font-size:0.82rem;padding:8px 12px;cursor:pointer;flex-shrink:0">💾 Save</button>
+      </div>
+      <div id="quick-save-msg" style="font-size:0.68rem;color:var(--muted);text-align:center;min-height:14px;margin-bottom:4px"></div>
       <div id="challenge-nudge">Think your mates can beat that? 👀</div>
       <button class="wbtn wbtn-challenge" id="challenge-btn" style="width:100%;margin-bottom:10px">⚔️ Challenge Friends</button>
       <div class="wbtns">
@@ -554,6 +565,34 @@ header{
 <div id="toast"></div>
 
 <script>
+// ── PERSONAL STATS (localStorage) ──
+const STATS_KEY='lxi_stats_v1';
+function loadStats(){try{const r=localStorage.getItem(STATS_KEY);return r?JSON.parse(r):{}}catch(e){return {}}}
+function saveStatForPuzzle(puzzleId,grade,score,time){
+  try{
+    const stats=loadStats();
+    const order=['F','D','C','B','A','S'];
+    const ex=stats[puzzleId];
+    if(!ex||order.indexOf(grade)>order.indexOf(ex.grade)){
+      stats[puzzleId]={grade,score,time,date:Date.now()};
+      localStorage.setItem(STATS_KEY,JSON.stringify(stats));
+    }
+  }catch(e){}
+}
+function getSummaryStats(){
+  const stats=loadStats();
+  const entries=Object.entries(stats);
+  if(!entries.length)return null;
+  const order=['F','D','C','B','A','S'];
+  const pts={F:0,D:1,C:2,B:3,A:4,S:5};
+  const avg=entries.reduce((a,[,e])=>a+pts[e.grade],0)/entries.length;
+  const avgGrade=order[Math.round(avg)];
+  const best=entries.reduce((a,b)=>pts[b[1].grade]>pts[a[1].grade]?b:a,entries[0]);
+  const bestPuzzle=PUZZLES.find(p=>String(p.id)===best[0]);
+  return{played:entries.length,total:PUZZLES.length,avgGrade,bestGrade:best[1].grade,
+    bestPuzzle:bestPuzzle?`${bestPuzzle.team} ${bestPuzzle.year}`:'',bestScore:best[1].score};
+}
+
 // ── SUPABASE ── (defined first so all functions can use it)
 const SB_URL='https://ecjrsjxvdtmvtgygnwxd.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjanJzanh2ZHRtdnRneWdud3hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MjQ4NjAsImV4cCI6MjA5NzEwMDg2MH0.hy0tXkSxRLEN18xnYTke3qh_FfOJ5P4Bn6ARvdCe-_Y';
@@ -733,55 +772,55 @@ function flag(n){return FLAGS[n]||'🌍';}
 // All y values chosen so the dot+tag fits within the pitch at typical screen sizes
 const LAYOUTS={
   "442":[
-    {x:50,y:75},
+    {x:50,y:74},
     {x:78,y:62},{x:59,y:62},{x:41,y:62},{x:22,y:62},
-    {x:78,y:43},{x:60,y:47},{x:40,y:47},{x:22,y:43},
-    {x:64,y:25},{x:36,y:25}
+    {x:78,y:44},{x:60,y:48},{x:40,y:48},{x:22,y:44},
+    {x:65,y:28},{x:35,y:28}
   ],
   "433":[
-    {x:50,y:75},
+    {x:50,y:74},
     {x:78,y:62},{x:59,y:62},{x:41,y:62},{x:22,y:62},
-    {x:67,y:43},{x:50,y:43},{x:33,y:43},
-    {x:78,y:25},{x:50,y:23},{x:22,y:25}
+    {x:67,y:44},{x:50,y:44},{x:33,y:44},
+    {x:78,y:28},{x:50,y:27},{x:22,y:28}
   ],
   "343":[
-    {x:50,y:75},
+    {x:50,y:74},
     {x:67,y:62},{x:50,y:62},{x:33,y:62},
-    {x:79,y:43},{x:61,y:47},{x:39,y:47},{x:21,y:43},
-    {x:72,y:25},{x:28,y:25},{x:50,y:23}
+    {x:79,y:44},{x:61,y:48},{x:39,y:48},{x:21,y:44},
+    {x:72,y:28},{x:28,y:28},{x:50,y:27}
   ],
   "4231":[
-    {x:50,y:75},
+    {x:50,y:74},
     {x:78,y:63},{x:59,y:63},{x:41,y:63},{x:22,y:63},
-    {x:62,y:51},{x:38,y:51},
-    {x:77,y:36},{x:50,y:34},{x:23,y:36},
-    {x:50,y:23}
+    {x:62,y:52},{x:38,y:52},
+    {x:77,y:38},{x:50,y:36},{x:23,y:38},
+    {x:50,y:27}
   ],
   "352":[
-    {x:50,y:75},
+    {x:50,y:74},
     {x:67,y:62},{x:50,y:62},{x:33,y:62},
-    {x:83,y:43},{x:65,y:47},{x:50,y:47},{x:35,y:47},{x:17,y:43},
-    {x:64,y:25},{x:36,y:25}
+    {x:83,y:44},{x:65,y:48},{x:50,y:48},{x:35,y:48},{x:17,y:44},
+    {x:65,y:28},{x:35,y:28}
   ],
   "4411":[
-    {x:50,y:75},
+    {x:50,y:74},
     {x:78,y:63},{x:59,y:63},{x:41,y:63},{x:22,y:63},
-    {x:78,y:46},{x:59,y:46},{x:41,y:46},{x:22,y:46},
-    {x:50,y:33},
-    {x:50,y:23}
+    {x:78,y:47},{x:59,y:47},{x:41,y:47},{x:22,y:47},
+    {x:50,y:35},
+    {x:50,y:27}
   ],
   "4141":[
-    {x:50,y:75},
+    {x:50,y:74},
     {x:78,y:63},{x:59,y:63},{x:41,y:63},{x:22,y:63},
-    {x:50,y:51},
-    {x:78,y:37},{x:59,y:37},{x:41,y:37},{x:22,y:37},
-    {x:50,y:23}
+    {x:50,y:52},
+    {x:78,y:38},{x:59,y:38},{x:41,y:38},{x:22,y:38},
+    {x:50,y:27}
   ],
   "532":[
-    {x:50,y:75},
+    {x:50,y:74},
     {x:78,y:62},{x:61,y:62},{x:50,y:59},{x:39,y:62},{x:22,y:62},
-    {x:78,y:41},{x:50,y:41},{x:22,y:41},
-    {x:64,y:25},{x:36,y:25}
+    {x:78,y:42},{x:50,y:42},{x:22,y:42},
+    {x:65,y:28},{x:35,y:28}
   ]
 };
 
@@ -1506,6 +1545,11 @@ legendary-xi.vercel.app`;
   const ni=document.getElementById('wname-input');if(ni){ni.value='';ni.disabled=false;}
   const sm=document.getElementById('wsubmit-msg');if(sm)sm.textContent='';
   const sb=document.getElementById('submit-score-btn');if(sb){sb.disabled=false;sb.textContent='Go →';}
+  const qni=document.getElementById('quick-name-input');if(qni){qni.value='';qni.disabled=false;}
+  const qmsg=document.getElementById('quick-save-msg');if(qmsg)qmsg.textContent='';
+  const qbtn=document.getElementById('quick-save-btn');if(qbtn){qbtn.disabled=false;qbtn.textContent='💾 Save';}
+  const qrow=document.getElementById('quick-save-row');if(qrow)qrow.style.display='flex';
+  saveStatForPuzzle(String(S.puzzle.id), grade.letter, finalScore, elapsed);
   haptic('win');soundWin();
   document.getElementById('win').classList.add('show');
   }catch(e){
@@ -1552,6 +1596,22 @@ function hidePicker(){
 }
 
 function buildPickerList(){
+  // Stats bar
+  const summary=getSummaryStats();
+  const bar=document.getElementById('picker-stats-bar');
+  if(summary&&bar){
+    const gc={S:'#FFD700',A:'#b5ff4d',B:'#5bc8ff',C:'#ff9f1c',D:'#ff9f1c',F:'#ff5c5c'};
+    bar.style.display='flex';
+    bar.innerHTML=`
+      <div style="text-align:center"><div style="font-family:var(--fh);font-size:1rem;font-weight:800;color:#fff">${summary.played}/${summary.total}</div><div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Played</div></div>
+      <div style="width:1px;height:26px;background:rgba(255,255,255,0.08)"></div>
+      <div style="text-align:center"><div style="font-family:var(--fh);font-size:1rem;font-weight:800;color:${gc[summary.avgGrade]}">${summary.avgGrade}</div><div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Avg Grade</div></div>
+      <div style="width:1px;height:26px;background:rgba(255,255,255,0.08)"></div>
+      <div style="text-align:center"><div style="font-family:var(--fh);font-size:1rem;font-weight:800;color:${gc[summary.bestGrade]}">${summary.bestGrade}</div><div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Best</div></div>
+      <div style="width:1px;height:26px;background:rgba(255,255,255,0.08)"></div>
+      <div style="text-align:center;overflow:hidden"><div style="font-family:var(--fh);font-size:0.72rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${summary.bestPuzzle}</div><div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Best On</div></div>
+    `;
+  }
   const scroll = document.getElementById('picker-scroll');
   scroll.innerHTML = '';
 
@@ -1583,6 +1643,7 @@ function buildPickerList(){
           <div class="pcard-meta">${fmt} &nbsp;·&nbsp; ${p.year} &nbsp;·&nbsp; ${"⭐".repeat(p.difficulty||3)}</div>
           <div class="pcard-match">${p.match}</div>
         </div>
+        ${(()=>{const st=loadStats()[String(p.id)];const gc={S:'#FFD700',A:'#b5ff4d',B:'#5bc8ff',C:'#ff9f1c',D:'#ff9f1c',F:'#ff5c5c'};return st?`<div style="font-family:var(--fh);font-size:1.1rem;font-weight:800;color:${gc[st.grade]};width:32px;height:32px;border-radius:7px;border:1.5px solid ${gc[st.grade]}40;background:${gc[st.grade]}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">${st.grade}</div>`:'<div style="width:32px;flex-shrink:0"></div>';})()}
         <div class="pcard-arrow">›</div>`;
       card.addEventListener('click', () => { hidePicker(); init(p); });
       grp.appendChild(card);
@@ -1861,6 +1922,40 @@ document.getElementById('tab-lineup').addEventListener('click',()=>{
 
 document.getElementById('submit-score-btn').addEventListener('click',submitScore);
 document.getElementById('wname-input').addEventListener('keydown',e=>{if(e.key==='Enter')submitScore();});
+
+async function quickSave(){
+  const inp=document.getElementById('quick-name-input');
+  const msg=document.getElementById('quick-save-msg');
+  const btn=document.getElementById('quick-save-btn');
+  const name=inp.value.trim();
+  if(!name){inp.focus();return;}
+  S.playerName=name;
+  btn.disabled=true;btn.textContent='Saving…';
+  const grade=getGrade(S.score);
+  const elapsed=S.start?Math.round((Date.now()-S.start)/1000):0;
+  try{
+    await sbFetch('/rest/v1/scores','POST',{
+      name,puzzle_id:S.puzzle.id,
+      puzzle_label:`${S.puzzle.team} ${S.puzzle.year}`,
+      score:S.score,grade:grade.letter,time_seconds:elapsed,
+      hints_used:(S.natDone?S.natDone.size:0)+Array.from((S.lettersRevealed||new Map()).values()).reduce((a,b)=>a+b,0),
+      group_id:S.groupId||null
+    });
+    msg.textContent='✓ Score saved to leaderboard!';
+    btn.textContent='✓ Saved';
+    inp.disabled=true;
+    setTimeout(()=>{
+      const row=document.getElementById('quick-save-row');
+      if(row)row.style.display='none';
+      msg.textContent='';
+    },2500);
+  }catch(e){
+    msg.textContent='Could not save — check connection';
+    btn.disabled=false;btn.textContent='💾 Save';
+  }
+}
+document.getElementById('quick-save-btn').addEventListener('click',quickSave);
+document.getElementById('quick-name-input').addEventListener('keydown',e=>{if(e.key==='Enter')quickSave();});
 document.getElementById('view-lb-btn').addEventListener('click',()=>{updateGroupTab();openLeaderboard();});
 document.getElementById('lb-close').addEventListener('click',()=>document.getElementById('lb-overlay').classList.remove('show'));
 
