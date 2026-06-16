@@ -576,12 +576,9 @@ function saveStatForPuzzle(puzzleId,grade,score,time){
     if(!ex||order.indexOf(grade)>order.indexOf(ex.grade)){
       stats[puzzleId]={grade,score,time,date:Date.now()};
       localStorage.setItem(STATS_KEY,JSON.stringify(stats));
-      console.log('[LXI] Saved stat:',puzzleId,grade,score);
-      toast('Grade '+grade+' saved!','ok');
     }
   }catch(e){
     console.error('[LXI] Save failed:',e);
-    toast('Save failed: '+e.message,'bad');
   }
 }
 function getSummaryStats(){
@@ -1581,8 +1578,6 @@ legendary-xi.vercel.app`;
     gridEl.innerHTML=rows.reverse().map(r=>r.join('')).join('<br>');
   }
 
-  // Populate name screen preview
-  if(glPre){glPre.textContent=grade.letter;glPre.style.color=grade.color;}
   // Show results immediately
   const rs=document.getElementById('wresults-screen');const ns=document.getElementById('wname-screen');
   if(rs)rs.style.display='block';if(ns)ns.style.display='none';
@@ -1640,8 +1635,6 @@ function hidePicker(){
 }
 
 function buildPickerList(){
-  // Debug: log what's in localStorage
-  console.log('[LXI] localStorage stats:', JSON.stringify(loadStats()));
   // Stats bar
   const summary=getSummaryStats();
   const bar=document.getElementById('picker-stats-bar');
