@@ -576,8 +576,13 @@ function saveStatForPuzzle(puzzleId,grade,score,time){
     if(!ex||order.indexOf(grade)>order.indexOf(ex.grade)){
       stats[puzzleId]={grade,score,time,date:Date.now()};
       localStorage.setItem(STATS_KEY,JSON.stringify(stats));
+      console.log('[LXI] Saved stat:',puzzleId,grade,score);
+      toast('Grade '+grade+' saved!','ok');
     }
-  }catch(e){}
+  }catch(e){
+    console.error('[LXI] Save failed:',e);
+    toast('Save failed: '+e.message,'bad');
+  }
 }
 function getSummaryStats(){
   const stats=loadStats();
@@ -591,24 +596,6 @@ function getSummaryStats(){
   const bestPuzzle=PUZZLES.find(p=>String(p.id)===best[0]);
   return{played:entries.length,total:PUZZLES.length,avgGrade,bestGrade:best[1].grade,
     bestPuzzle:bestPuzzle?`${bestPuzzle.team} ${bestPuzzle.year}`:'',bestScore:best[1].score};
-}
-
-// ── KEYBOARD FIX (iOS Safari) ──
-// Use visualViewport to detect keyboard and keep bottom chrome visible
-if(window.visualViewport){
-  function handleViewport(){
-    const vv=window.visualViewport;
-    const app=document.getElementById('app');
-    if(!app)return;
-    // When keyboard is open, viewport height shrinks
-    // Pin the app height to the visual viewport height
-    app.style.height=vv.height+'px';
-    app.style.maxHeight=vv.height+'px';
-    // Offset for any viewport scroll (iOS sometimes scrolls the page)
-    app.style.transform='translateY('+vv.offsetTop+'px)';
-  }
-  window.visualViewport.addEventListener('resize',handleViewport);
-  window.visualViewport.addEventListener('scroll',handleViewport);
 }
 
 // ── SUPABASE ── (defined first so all functions can use it)
@@ -1653,6 +1640,8 @@ function hidePicker(){
 }
 
 function buildPickerList(){
+  // Debug: log what's in localStorage
+  console.log('[LXI] localStorage stats:', JSON.stringify(loadStats()));
   // Stats bar
   const summary=getSummaryStats();
   const bar=document.getElementById('picker-stats-bar');
