@@ -1518,6 +1518,7 @@ document.getElementById('picker-lb-btn').addEventListener('click',()=>{
   if(tg)tg.style.display='none';
   if(tl)tl.classList.remove('active');
   if(to)to.classList.add('active');
+  document.getElementById('lb-tabs').style.display='none';
   // Fetch and render
   sbFetch('/rest/v1/scores?select=*&order=score.desc&limit=500').then(data=>{
     lbData=data;
@@ -1548,21 +1549,29 @@ async function submitScore(){
   btn.disabled=true;btn.textContent='Saving…';
   S.playerName=name;
   const grade=getGrade(S.score);
-  const elapsed=Math.round((Date.now()-S.start)/1000);
+  const elapsed=S.start?Math.round((Date.now()-S.start)/1000):0;
   try{
     await sbFetch('/rest/v1/scores','POST',{
-      name,puzzle_id:S.puzzle.id,
+      name,
+      puzzle_id:S.puzzle.id,
       puzzle_label:`${S.puzzle.team} ${S.puzzle.year}`,
-      score:S.score,grade:grade.letter,
+      score:S.score,
+      grade:grade.letter,
       time_seconds:elapsed,
-      hints_used:S.natDone.size+Array.from(S.lettersRevealed.values()).reduce((a,b)=>a+b,0),
+      hints_used:(S.natDone?S.natDone.size:0)+Array.from((S.lettersRevealed||new Map()).values()).reduce((a,b)=>a+b,0),
       group_id:S.groupId||null
     });
-  }catch(e){console.error('Submit:',e);}
-  S.playerName=name;
-  document.getElementById('wname-screen').style.display='none';
-  document.getElementById('wresults-screen').style.display='block';
-  generateChallenge();
+    btn.textContent='✓ Saved!';
+  }catch(e){
+    console.error('Submit error:',e);
+    btn.textContent='Saved locally';
+  }
+  // Always proceed to share regardless of save success
+  setTimeout(()=>{
+    document.getElementById('wname-screen').style.display='none';
+    document.getElementById('wresults-screen').style.display='block';
+    generateChallenge();
+  }, 400);
 }
 
 document.getElementById('skip-name-btn').addEventListener('click',()=>{S.playerName='';document.getElementById('wname-screen').style.display='none';document.getElementById('wresults-screen').style.display='block';generateChallenge();});
@@ -1634,10 +1643,13 @@ async function openLeaderboard(){
       document.getElementById('tab-overall').classList.remove('active');
       renderGroupLb(lbData,S.groupId);
     } else {
-      lbMode='lineup';
-      document.getElementById('tab-lineup').classList.add('active');
-      document.getElementById('tab-overall').classList.remove('active');
-      showLineupTabs();
+      // Default: show overall leaderboard immediately, no extra click needed
+      lbMode='overall';
+      document.getElementById('tab-overall').classList.add('active');
+      document.getElementById('tab-lineup').classList.remove('active');
+      document.getElementById('tab-group').classList.remove('active');
+      document.getElementById('lb-tabs').style.display='none';
+      renderOverall();
     }
   }catch(e){
     console.error('Leaderboard error:',e);
@@ -1878,4 +1890,3 @@ if(challengeParam){
 </script>
 </body>
 </html>
-
