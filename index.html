@@ -1771,49 +1771,48 @@ function buildChallengeUrl(){
 }
 
 function generateChallenge(){
-  const url=buildChallengeUrl();
-  const grade=getGrade(S.score);
-  const name=S.playerName||document.getElementById('wname-input').value.trim()||null;
-  const elapsed=Math.round((Date.now()-S.start)/1000);
-  const mins=Math.floor(elapsed/60),secs=elapsed%60;
-  const tStr=mins>0?`${mins}m ${secs}s`:`${elapsed}s`;
-  const stars='⭐'.repeat(S.puzzle.difficulty||3);
-  const challenger=name||'Someone';
-  const flatGrid=S.puzzle.players.map((_,i)=>{
-    if(S.revealedPlayers&&S.revealedPlayers.has(i))return'🟥';
-    return(S.natDone.has(i)||(S.lettersRevealed.get(i)||0)>0)?'🟨':'🟩';
-  }).join('');
-  const trashLines=[
-    `${challenger} just did ${S.puzzle.team} ${S.puzzle.year} in ${tStr} — Grade ${grade.letter}. Think you can do better? 😂`,
-    `${challenger} got Grade ${grade.letter} on ${S.puzzle.team} ${S.puzzle.year} in ${tStr}. Don't embarrass yourself 👀`,
-    `Grade ${grade.letter}. ${S.score.toLocaleString()}pts. ${tStr}. ${challenger} is waiting... 😤`,
-    `${challenger} completed ${S.puzzle.team} ${S.puzzle.year} ${stars} in ${tStr}. Your move 👊`,
-    `${S.score.toLocaleString()}pts in ${tStr} from ${challenger}. Can you beat Grade ${grade.letter}? 🔥`,
-  ];
-  const trash=trashLines[Math.floor(Math.random()*trashLines.length)];
-  const shareText=`⚽ Lineup Legends #${S.puzzle.id}
+  try{
+    const url=buildChallengeUrl();
+    const grade=getGrade(S.score);
+    const name=S.playerName||'';
+    const elapsed=S.start?Math.round((Date.now()-S.start)/1000):0;
+    const mins=Math.floor(elapsed/60),secs=elapsed%60;
+    const tStr=mins>0?`${mins}m ${secs}s`:`${elapsed}s`;
+    const stars='⭐'.repeat(S.puzzle.difficulty||3);
+    const challenger=name||'Someone';
+    const flatGrid=S.puzzle.players.map((_,i)=>{
+      if(S.revealedPlayers&&S.revealedPlayers.has(i))return'🟥';
+      return(S.natDone.has(i)||(S.lettersRevealed.get(i)||0)>0)?'🟨':'🟩';
+    }).join('');
+    const trashLines=[
+      `${challenger} got Grade ${grade.letter} on ${S.puzzle.team} ${S.puzzle.year} in ${tStr}. Think you can do better? 😂`,
+      `${challenger} smashed ${S.puzzle.team} ${S.puzzle.year} in ${tStr}. Don't embarrass yourself 👀`,
+      `Grade ${grade.letter}. ${S.score.toLocaleString()}pts. ${tStr}. ${challenger} is waiting 😤`,
+      `${challenger} completed ${S.puzzle.team} ${S.puzzle.year} in ${tStr}. Your move 👊`,
+    ];
+    const trash=trashLines[Math.floor(Math.random()*trashLines.length)];
+    const shareText=`⚽ Lineup Legends #${S.puzzle.id}
 ${S.puzzle.team} ${S.puzzle.year} ${stars}
 
 ${flatGrid}
 
-"${gradeQuote}"
-
 ${trash}
 
-👥 Group scores:
+👥 Beat me:
 ${url}`;
-  if(navigator.share){
-    navigator.share({title:'Lineup Legends Challenge',text:shareText}).catch((err)=>{
-      // Share failed or was cancelled — fall back to clipboard
-      if(navigator.clipboard){
-        navigator.clipboard.writeText(shareText).then(()=>toast('Link copied to clipboard!','ok'));
-      }
-    });
-  } else if(navigator.clipboard){
-    navigator.clipboard.writeText(shareText).then(()=>toast('Link copied to clipboard!','ok'));
-  } else {
-    // Last resort — show the text in an alert so they can copy manually
-    prompt('Copy your challenge link:',url);
+
+    if(navigator.share){
+      navigator.share({title:'Lineup Legends',text:shareText}).catch(()=>{
+        if(navigator.clipboard) navigator.clipboard.writeText(shareText).then(()=>toast('Copied!','ok'));
+      });
+    } else if(navigator.clipboard){
+      navigator.clipboard.writeText(shareText).then(()=>toast('Link copied!','ok'));
+    } else {
+      prompt('Copy your challenge link:',url);
+    }
+  }catch(err){
+    console.error('generateChallenge error:',err);
+    toast('Could not share — try again','bad');
   }
 }
 
