@@ -736,8 +736,6 @@ function isMatch(guess, name){
   // Try last word alone (catches "Bruyne" for "De Bruyne")
   const lastWord=parts[parts.length-1];
   if(lastWord.length>=3 && fuzzyMatch(g,lastWord)) return true;
-  // Try first name (min 4 chars to avoid false positives)
-  if(parts[0].length>=4 && fuzzyMatch(g,parts[0])) return true;
   return false;
 }
 
@@ -748,6 +746,7 @@ function hintLabel(p,puzzle){
 
 // ── STATE ──
 let S={},usedIds=[],scoreTimer=null;
+let lbData=[],lbMode='overall';
 // ── SCORING ──
 // Each player worth 100 pts, reduced by hints:
 //   Nationality:  -40 pts  → 60 pts remaining
@@ -1495,15 +1494,21 @@ function teamEmoji(team){
 
 document.getElementById('back-btn').addEventListener('click', showPicker);
 document.getElementById('picker-lb-btn').addEventListener('click',()=>{
-  updateGroupTab();
   const overlay=document.getElementById('lb-overlay');
   overlay.classList.add('show');
   document.getElementById('lb-list').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Loading…</div>';
   document.getElementById('lb-tabs').style.display='none';
-  document.getElementById('tab-overall').classList.add('active');
-  document.getElementById('tab-lineup').classList.remove('active');
-  document.getElementById('tab-group').classList.remove('active');
-  sbFetch('/rest/v1/scores?select=*&order=score.desc&limit=500').then(data=>{
+  // Set tab state
+  const tg=document.getElementById('tab-group');
+  const tl=document.getElementById('tab-lineup');
+  const to=document.getElementById('tab-overall');
+  if(tg)tg.style.display='none';
+  if(tl)tl.classList.remove('active');
+  if(to)to.classList.add('active');
+  // Fetch and render
+  fetch('https://ecjrsjxvdtmvtgygnwxd.supabase.co/rest/v1/scores?select=*&order=score.desc&limit=500',{
+    headers:{'apikey':'sb_publishable_Jp_tM72yApuwyCSS-A5YNg_9C6meVX1','Authorization':'Bearer sb_publishable_Jp_tM72yApuwyCSS-A5YNg_9C6meVX1'}
+  }).then(r=>r.json()).then(data=>{
     lbData=data;
     renderOverall();
   }).catch(()=>{
@@ -1567,36 +1572,7 @@ async function sbFetch(path,method='GET',body=null){
   return method==='GET'?r.json():true;
 }
 
-async function submitScore(){
-  const nameEl=document.getElementById('wname-input');
-  const msgEl=document.getElementById('wsubmit-msg');
-  const name=nameEl.value.trim();
-  if(!name){nameEl.focus();msgEl.textContent='Enter your name first';return;}
-  const btn=document.getElementById('submit-score-btn');
-  btn.disabled=true;btn.textContent='Saving…';
-  const grade=getGrade(S.score);
-  try{
-    await sbFetch('/rest/v1/scores','POST',{
-      name,
-      puzzle_id:S.puzzle.id,
-      puzzle_label:`${S.puzzle.team} ${S.puzzle.year}`,
-      score:S.score,
-      grade:grade.letter,
-      time_seconds:Math.round((Date.now()-S.start)/1000),
-      hints_used:S.natDone.size+Array.from(S.lettersRevealed.values()).reduce((a,b)=>a+b,0),
-      group_id:S.groupId||null
-    });
-    msgEl.textContent='✓ Score on the board!';
-    btn.textContent='✓ Submitted';
-    nameEl.disabled=true;
-  }catch(e){
-    console.error('Submit error:',e);
-    msgEl.textContent='Could not save — check connection';
-    btn.disabled=false;btn.textContent='Try Again';
-  }
-}
-
-let lbData=[], lbMode='overall';
+// submitScore defined above
 
 
 function renderGroupLb(data,groupId){
