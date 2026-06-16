@@ -1540,39 +1540,35 @@ function showResultsScreen(){
   document.getElementById('wresults-screen').style.display='block';
 }
 
-async function submitScore(){
+function submitScore(){
   const nameEl=document.getElementById('wname-input');
   const msgEl=document.getElementById('wsubmit-msg');
   const name=nameEl.value.trim();
   if(!name){nameEl.focus();msgEl.textContent='Enter your name 👆';return;}
-  const btn=document.getElementById('submit-score-btn');
-  btn.disabled=true;btn.textContent='Saving…';
+
+  // Store name immediately
   S.playerName=name;
-  if(msgEl)msgEl.textContent='';
+
+  // Return to results screen
+  document.getElementById('wname-screen').style.display='none';
+  document.getElementById('wresults-screen').style.display='block';
+
+  // Fire share sheet NOW — synchronously within user gesture
+  generateChallenge();
+
+  // Save to leaderboard in background — non-blocking
   const grade=getGrade(S.score);
   const elapsed=S.start?Math.round((Date.now()-S.start)/1000):0;
-  try{
-    await sbFetch('/rest/v1/scores','POST',{
-      name,
-      puzzle_id:S.puzzle.id,
-      puzzle_label:`${S.puzzle.team} ${S.puzzle.year}`,
-      score:S.score,
-      grade:grade.letter,
-      time_seconds:elapsed,
-      hints_used:(S.natDone?S.natDone.size:0)+Array.from((S.lettersRevealed||new Map()).values()).reduce((a,b)=>a+b,0),
-      group_id:S.groupId||null
-    });
-    btn.textContent='✓ Saved!';
-  }catch(e){
-    console.error('Submit error:',e);
-    btn.textContent='Saved locally';
-  }
-  // Always proceed to share regardless of save success
-  setTimeout(()=>{
-    document.getElementById('wname-screen').style.display='none';
-    document.getElementById('wresults-screen').style.display='block';
-    generateChallenge();
-  }, 400);
+  sbFetch('/rest/v1/scores','POST',{
+    name,
+    puzzle_id:S.puzzle.id,
+    puzzle_label:`${S.puzzle.team} ${S.puzzle.year}`,
+    score:S.score,
+    grade:grade.letter,
+    time_seconds:elapsed,
+    hints_used:(S.natDone?S.natDone.size:0)+Array.from((S.lettersRevealed||new Map()).values()).reduce((a,b)=>a+b,0),
+    group_id:S.groupId||null
+  }).catch(e=>console.error('Save error:',e));
 }
 
 document.getElementById('skip-name-btn').addEventListener('click',()=>{S.playerName='';document.getElementById('wname-screen').style.display='none';document.getElementById('wresults-screen').style.display='block';generateChallenge();});
