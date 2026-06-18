@@ -515,8 +515,9 @@ body.dark-pitch .tag{
         <div style="font-family:var(--fh);font-weight:800;font-size:1rem;color:var(--white)">⚽ Daily Lineup</div>
         <div id="daily-card-sub" style="font-size:0.72rem;color:var(--muted);margin-top:2px">Loading…</div>
       </div>
+      <span id="daily-card-streak-pill" class="picker-group-count" style="display:none;color:#0a2000;background:var(--lime);border:none;font-size:0.76rem"></span>
     </div>
-    <div id="daily-card-streak" style="display:none;font-family:var(--fh);font-weight:800;font-size:0.78rem;color:var(--lime);margin-top:8px;padding-top:8px;border-top:1px solid rgba(181,255,77,0.2)"></div>
+    <div id="daily-card-streak-msg" style="display:none;font-family:var(--fh);font-weight:700;font-size:0.74rem;color:var(--lime);margin-top:8px;padding-top:8px;border-top:1px solid rgba(181,255,77,0.2)"></div>
   </div>
   <div id="picker-league-banner" style="display:none;margin:6px 12px 0;padding:8px 12px;background:rgba(181,255,77,0.08);border:1px solid rgba(181,255,77,0.2);border-radius:10px;cursor:pointer" onclick="updateGroupTab();openLeaderboard()">
     <div style="display:flex;align-items:center;justify-content:space-between">
@@ -2130,8 +2131,9 @@ function showPicker(){
 
 function renderDailyCard(){
   const sub=document.getElementById('daily-card-sub');
-  const streakEl=document.getElementById('daily-card-streak');
-  if(!sub||!streakEl)return;
+  const pill=document.getElementById('daily-card-streak-pill');
+  const msg=document.getElementById('daily-card-streak-msg');
+  if(!sub||!pill||!msg)return;
   const puzzle=dailyPuzzleForToday();
   const dayNum=dayIndexForToday()+1;
   const done=hasCompletedTodaysDaily();
@@ -2140,13 +2142,16 @@ function renderDailyCard(){
     ? `Day ${dayNum} complete ✓ — come back tomorrow`
     : `Day ${dayNum} · ${puzzle.team} ${puzzle.year}`;
   if(state.streak>0){
+    pill.style.display='inline-block';
+    pill.innerHTML = `🔥 ${state.streak}`;
+    msg.style.display='block';
     const dayWord = state.streak===1 ? 'day' : 'days';
-    streakEl.style.display='block';
-    streakEl.innerHTML = done
-      ? `🔥 You're on a ${state.streak}-${dayWord} streak — nice work!`
-      : `🔥 ${state.streak}-${dayWord} streak — <span style="color:#ff9f5a">play today to keep it going!</span>`;
+    msg.innerHTML = done
+      ? `You're on a ${state.streak}-${dayWord} streak — nice work!`
+      : `${state.streak}-${dayWord} streak — <span style="color:#ff9f5a">play today to keep it going!</span>`;
   } else {
-    streakEl.style.display='none';
+    pill.style.display='none';
+    msg.style.display='none';
   }
 }
 
