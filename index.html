@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Legendary XI</title>
 
+<!-- PostHog Analytics — tracks visits + custom gameplay events (lineup_started, lineup_completed) -->
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Pn On init Wn Qn ki Gn Kn zn capture calculateEventProperties rs register register_once register_for_session unregister unregister_for_session os getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync ls identify setPersonProperties unsetPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty ns es createPersonProfile setInternalOrTestUser ss Hn cs opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Yn debug Ci gr getPageViewId captureTraceFeedback captureTraceMetric qn".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_yaCFDwrXvi93LMmMR2t4YKGeEwKFP5YGk3gRyKUpYXKa', {
+        api_host: 'https://eu.i.posthog.com',
+        defaults: '2026-05-30',
+        person_profiles: 'identified_only',
+    })
+</script>
+
 <!-- Open Graph — controls preview in WhatsApp, iMessage, Twitter, Facebook -->
 <meta property="og:title" content="⚽ Legendary XI — Can you guess the lineup?"/>
 <meta property="og:description" content="Guess the legendary football lineup. How good is your football knowledge? Challenge your mates and see who knows their football."/>
@@ -440,7 +450,9 @@ body.dark-pitch .tag{
 #picker-share:active{background:rgba(255,255,255,0.16)}
 #picker-scroll{flex:1;overflow-y:auto;padding:10px 12px 20px;min-height:200px}
 .picker-group{margin-bottom:18px}
-.picker-group-title{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:2px}
+.picker-group-title{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:2px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.picker-group-count{font-size:0.72rem;font-weight:800;color:var(--muted);letter-spacing:0.5px;background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:20px;flex-shrink:0}
+.picker-group-count.done{color:#0a2000;background:var(--lime);border:none}
 .pcard{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.15s,border-color 0.15s}
 .pcard:active{background:rgba(181,255,77,0.1);border-color:rgba(181,255,77,0.35)}
 .pcard-badge{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
@@ -496,6 +508,7 @@ body.dark-pitch .tag{
     </div>
   </div>
   <div id="picker-tagline-row">Choose a lineup to guess</div>
+  <div id="picker-overall-progress" style="display:none;padding:0 14px 8px"></div>
   <div id="picker-league-banner" style="display:none;margin:6px 12px 0;padding:8px 12px;background:rgba(181,255,77,0.08);border:1px solid rgba(181,255,77,0.2);border-radius:10px;cursor:pointer" onclick="updateGroupTab();openLeaderboard()">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div>
@@ -1318,6 +1331,13 @@ function init(puzzle){
      lettersRevealed:new Map(), // i -> count of letters revealed
      revealedPlayers:new Set(),
      done:false,start:Date.now(),activeIdx:null};
+  // Analytics — fires once per puzzle attempt, never blocks gameplay if it fails
+  try{
+    if(window.posthog) posthog.capture('lineup_started',{
+      puzzle_id:puzzle.id, team:puzzle.team, year:puzzle.year,
+      competition:puzzle.competition, formation:puzzle.formation
+    });
+  }catch(e){}
   // Initialise potential for each player
   puzzle.players.forEach((_,i)=>{ S.playerPotential[i]=BASE_PER_PLAYER; });
   winShown=false;
@@ -1925,6 +1945,14 @@ legendary-xi.vercel.app`;
   const qbtn=document.getElementById('quick-save-btn');if(qbtn){qbtn.disabled=false;qbtn.textContent='💾 Save';}
   const qrow=document.getElementById('quick-save-row');if(qrow)qrow.style.display='flex';
   saveStatForPuzzle(String(S.puzzle.id), grade.letter, finalScore, elapsed);
+  // Analytics — fires once per completed lineup, never blocks gameplay if it fails
+  try{
+    if(window.posthog) posthog.capture('lineup_completed',{
+      puzzle_id:S.puzzle.id, team:S.puzzle.team, year:S.puzzle.year,
+      competition:S.puzzle.competition, formation:S.puzzle.formation,
+      grade:grade.letter, score:finalScore, time_seconds:elapsed
+    });
+  }catch(e){}
   haptic('win');soundWin();
   document.getElementById('win').classList.add('show');
   }catch(e){
@@ -2013,6 +2041,24 @@ function buildPickerList(){
   const scroll = document.getElementById('picker-scroll');
   scroll.innerHTML = '';
 
+  // Overall completion progress (reuses existing stats) — a gentle "how am I doing" hook
+  const allStats = loadStats();
+  const totalDone = PUZZLES.filter(p => allStats[String(p.id)]).length;
+  const totalAll = PUZZLES.length;
+  const opEl = document.getElementById('picker-overall-progress');
+  if(opEl){
+    const pct = totalAll ? Math.round((totalDone/totalAll)*100) : 0;
+    opEl.style.display = 'block';
+    opEl.innerHTML =
+      `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">`+
+        `<span style="font-size:0.72rem;font-weight:700;color:var(--white)">${totalDone} of ${totalAll} lineups completed</span>`+
+        `<span style="font-size:0.72rem;font-weight:800;color:var(--lime)">${pct}%</span>`+
+      `</div>`+
+      `<div style="height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden">`+
+        `<div style="height:100%;width:${pct}%;background:var(--lime);border-radius:3px;transition:width 0.5s"></div>`+
+      `</div>`;
+  }
+
   // Group puzzles by competition
   const groups = new Map();
   PUZZLES.forEach(p => {
@@ -2028,7 +2074,13 @@ function buildPickerList(){
     const puzzles = groups.get(comp);
     const grp = document.createElement('div');
     grp.className = 'picker-group';
-    grp.innerHTML = `<div class="picker-group-title">${COMP_ICONS[comp]||'🏆'} ${comp}</div>`;
+    // Completion count for this group (reuses existing per-puzzle stats — no new storage)
+    const stats = loadStats();
+    const doneCount = puzzles.filter(p => stats[String(p.id)]).length;
+    const total = puzzles.length;
+    const allDone = doneCount === total && total > 0;
+    const countHtml = `<span class="picker-group-count${allDone?' done':''}">${allDone?'✓ ':''}${doneCount}/${total}</span>`;
+    grp.innerHTML = `<div class="picker-group-title">${COMP_ICONS[comp]||'🏆'} ${comp}${countHtml}</div>`;
 
     puzzles.forEach(p => {
       const fmt = p.formation.split('').join('-');
