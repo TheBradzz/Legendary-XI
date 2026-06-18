@@ -1212,6 +1212,7 @@ function hintLabel(p,puzzle){
 
 // ── STATE ──
 let S={},usedIds=[],scoreTimer=null;
+let sessionLineupsStarted=0; // counts lineups started this session
 
 // ═══════════════════════════════════════════════════════════
 // DAILY LINEUP — deterministic, queueable, no backend needed.
@@ -1448,9 +1449,13 @@ function init(puzzle, isDaily){
      done:false,start:Date.now(),activeIdx:null};
   // Analytics — fires once per puzzle attempt, never blocks gameplay if it fails
   try{
+    sessionLineupsStarted++;
     if(window.posthog) posthog.capture('lineup_started',{
       puzzle_id:puzzle.id, team:puzzle.team, year:puzzle.year,
-      competition:puzzle.competition, formation:puzzle.formation
+      competition:puzzle.competition, formation:puzzle.formation,
+      is_daily:!!isDaily,
+      session_lineup_number:sessionLineupsStarted, // 1=first, 2=return player, etc.
+      is_return_play:sessionLineupsStarted>1
     });
   }catch(e){}
   // Initialise potential for each player
@@ -2784,6 +2789,11 @@ function generateShareCard(){
         files:[file],
         title:'Legendary XI — Grade '+grade.letter,
         text:'I got Grade '+grade.letter+' on '+S.puzzle.team+' '+S.puzzle.year+'! Can you beat it? legendary-xi.vercel.app'
+      }).then(()=>{
+        try{if(window.posthog) posthog.capture('result_shared',{
+          method:'native_share', puzzle_id:S.puzzle.id,
+          team:S.puzzle.team, year:S.puzzle.year, grade:grade.letter
+        });}catch(e){}
       }).catch(()=>{
         // Cancelled or failed — download instead
         const link=document.createElement('a');
@@ -2794,6 +2804,10 @@ function generateShareCard(){
       const link=document.createElement('a');
       link.href=dataUrl; link.download='legendary-xi.png'; link.click();
       toast('Image downloaded!','ok');
+      try{if(window.posthog) posthog.capture('result_shared',{
+        method:'download', puzzle_id:S.puzzle.id,
+        team:S.puzzle.team, year:S.puzzle.year, grade:grade.letter
+      });}catch(e){}
     }
   }catch(err){
     console.error('Share card error:',err);
@@ -2902,6 +2916,12 @@ document.getElementById('challenge-btn').addEventListener('click',()=>{
   document.getElementById('wresults-screen').style.display='none';
   document.getElementById('wname-screen').style.display='block';
   setTimeout(()=>document.getElementById('wname-input').focus(),150);
+  try{
+    if(window.posthog) posthog.capture('challenge_initiated',{
+      puzzle_id:S.puzzle.id, team:S.puzzle.team, year:S.puzzle.year,
+      grade:S.grade||null
+    });
+  }catch(e){}
 });
 
 // ── HAPTICS & SOUND ──
@@ -2950,6 +2970,16 @@ const urlP=new URLSearchParams(window.location.search);
 const joinId=urlP.get('join'),joinName=urlP.get('ln');
 if(joinId&&joinName){joinLeague(joinId,decodeURIComponent(joinName));S.groupId=joinId;}
 let challengeParam=checkChallengeParam();
+// Track when someone arrives via a challenge link — this is viral referral
+if(challengeParam && challengeParam.puzzleId){
+  try{
+    if(window.posthog) posthog.capture('challenge_opened',{
+      puzzle_id:challengeParam.puzzleId,
+      challenger_score:challengeParam.score||null,
+      challenger_grade:challengeParam.grade||null
+    });
+  }catch(e){}
+}
 if(challengeParam){
   const puzzle=PUZZLES.find(p=>p.id===challengeParam.puzzleId);
   if(puzzle){hidePicker();init(puzzle);if(challengeParam.groupId)setTimeout(()=>{S.groupId=challengeParam.groupId;},50);setTimeout(()=>showChallengeBanner(challengeParam),200);}
