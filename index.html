@@ -509,6 +509,15 @@ body.dark-pitch .tag{
   </div>
   <div id="picker-tagline-row">Choose a lineup to guess</div>
   <div id="picker-overall-progress" style="display:none;padding:0 14px 8px"></div>
+  <div id="daily-card" style="margin:0 14px 14px;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(181,255,77,0.15),rgba(181,255,77,0.04));border:1px solid rgba(181,255,77,0.3);cursor:pointer">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div>
+        <div style="font-family:var(--fh);font-weight:800;font-size:1rem;color:var(--white)">⚽ Daily Lineup</div>
+        <div id="daily-card-sub" style="font-size:0.72rem;color:var(--muted);margin-top:2px">Loading…</div>
+      </div>
+      <div id="daily-card-streak" style="font-family:var(--fh);font-weight:800;font-size:0.85rem;color:var(--lime);white-space:nowrap"></div>
+    </div>
+  </div>
   <div id="picker-league-banner" style="display:none;margin:6px 12px 0;padding:8px 12px;background:rgba(181,255,77,0.08);border:1px solid rgba(181,255,77,0.2);border-radius:10px;cursor:pointer" onclick="updateGroupTab();openLeaderboard()">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div>
@@ -589,6 +598,7 @@ body.dark-pitch .tag{
         <div class="wgrade-label" id="wgrade-label">-</div>
       </div>
       <div class="wsub" id="wsub"></div>
+      <div id="win-streak-banner" style="display:none;text-align:center;font-family:var(--fh);font-size:0.85rem;font-weight:700;color:var(--lime);background:rgba(181,255,77,0.1);border:1px solid rgba(181,255,77,0.3);border-radius:10px;padding:6px 10px;margin:8px 16px 0"></div>
       <div class="wscore-block">
         <div class="wscore-num" id="wfinal-score">-</div>
         <div class="wscore-lbl">pts / 1,100</div>
@@ -1030,6 +1040,19 @@ const PUZZLES=[{"id":1,"team":"Leeds United","competition":"Champions League","m
   {"pos":"RW","name":"Mohamed Salah","nat":"Egypt","club":"Liverpool"},
   {"pos":"ST","name":"Harry Kane","nat":"England","club":"Tottenham"},
   {"pos":"LW","name":"Son","nat":"South Korea","club":"Tottenham"}
+]},
+{"id":49,"team":"England","competition":"International","match":"FIFA World Cup Semi Final vs Croatia (Moscow, lost 2-1 AET)","formation":"352","year":2018,"difficulty":2,"players":[
+  {"pos":"GK","name":"Jordan Pickford","nat":"England","club":"Everton"},
+  {"pos":"CB","name":"Kyle Walker","nat":"England","club":"Manchester City"},
+  {"pos":"CB","name":"John Stones","nat":"England","club":"Manchester City"},
+  {"pos":"CB","name":"Harry Maguire","nat":"England","club":"Leicester City"},
+  {"pos":"RWB","name":"Kieran Trippier","nat":"England","club":"Tottenham Hotspur"},
+  {"pos":"CM","name":"Jordan Henderson","nat":"England","club":"Liverpool"},
+  {"pos":"CM","name":"Jesse Lingard","nat":"England","club":"Manchester United"},
+  {"pos":"CM","name":"Dele Alli","nat":"England","club":"Tottenham Hotspur"},
+  {"pos":"LWB","name":"Ashley Young","nat":"England","club":"Manchester United"},
+  {"pos":"ST","name":"Harry Kane","nat":"England","club":"Tottenham Hotspur"},
+  {"pos":"ST","name":"Raheem Sterling","nat":"England","club":"Manchester City"}
 ]}];
 
 const FLAGS={"England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Wales":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","Republic of Ireland":"🇮🇪","France":"🇫🇷","Spain":"🇪🇸","Germany":"🇩🇪","Italy":"🇮🇹","Netherlands":"🇳🇱","Portugal":"🇵🇹","Brazil":"🇧🇷","Argentina":"🇦🇷","Australia":"🇦🇺","Norway":"🇳🇴","Sweden":"🇸🇪","Denmark":"🇩🇰","Finland":"🇫🇮","Poland":"🇵🇱","Belgium":"🇧🇪","Ivory Coast":"🇨🇮","Cameroon":"🇨🇲","Mali":"🇲🇱","Ghana":"🇬🇭","Algeria":"🇩🇿","Nigeria":"🇳🇬","Japan":"🇯🇵","Czech Republic":"🇨🇿","Jamaica":"🇯🇲","Trinidad and Tobago":"🇹🇹","Austria":"🇦🇹","Morocco":"🇲🇦","Senegal":"🇸🇳","South Korea":"🇰🇷","Croatia":"🇭🇷","Switzerland":"🇨🇭"};
@@ -1175,6 +1198,83 @@ function hintLabel(p,puzzle){
 
 // ── STATE ──
 let S={},usedIds=[],scoreTimer=null;
+
+// ═══════════════════════════════════════════════════════════
+// DAILY LINEUP — deterministic, queueable, no backend needed.
+// World Cup 2026 is live (11 Jun - 19 Jul), so the queue leads with
+// World Cup-relevant content while that's the live conversation,
+// then falls back to looping the full library after the tournament.
+// To add/reorder future days, just edit DAILY_QUEUE — each entry is
+// a puzzle id from PUZZLES. The date math below picks "today's" id.
+// ═══════════════════════════════════════════════════════════
+const DAILY_START_DATE = '2026-06-18'; // day 1 of the daily rotation
+const DAILY_QUEUE = [
+  49, // England 2018 vs Croatia WC semi — today's launch puzzle
+  3,  // England 2022 vs France WC QF
+  16, // France 1998 WC Final
+  17, // Germany 2014 WC Final
+  29, // Brazil (WC era squad)
+  41, // Le Tournoi 1997
+  40, // England 5-1 Germany
+  39, // England Euro 2000
+  // After this, falls back to looping ALL puzzles by id so the
+  // queue never runs dry — see dailyPuzzleForToday() below.
+];
+const DAILY_KEY = 'lxi_daily_v1'; // {lastCompletedDate:'YYYY-MM-DD', streak:n, lastDayIndex:n}
+
+function dayIndexForToday(){
+  const start = new Date(DAILY_START_DATE+'T00:00:00');
+  const now = new Date();
+  const startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.floor((nowUTC - startUTC) / 86400000); // 0-based day index
+}
+
+function dailyPuzzleForToday(){
+  const idx = dayIndexForToday();
+  let puzzleId;
+  if(idx>=0 && idx<DAILY_QUEUE.length){
+    puzzleId = DAILY_QUEUE[idx];
+  } else {
+    // Queue exhausted — loop through the full library deterministically
+    // so every visitor on a given day still sees the same puzzle.
+    const allIds = PUZZLES.map(p=>p.id).sort((a,b)=>a-b);
+    puzzleId = allIds[((idx - DAILY_QUEUE.length) % allIds.length + allIds.length) % allIds.length];
+  }
+  return PUZZLES.find(p=>p.id===puzzleId) || PUZZLES[0];
+}
+
+function todayDateString(){
+  const now = new Date();
+  return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+}
+
+function loadDailyState(){
+  try{
+    const r = localStorage.getItem(DAILY_KEY);
+    return r ? JSON.parse(r) : {lastCompletedDate:null, streak:0, lastDayIndex:null};
+  }catch(e){ return {lastCompletedDate:null, streak:0, lastDayIndex:null}; }
+}
+
+function saveDailyCompletion(){
+  try{
+    const state = loadDailyState();
+    const today = todayDateString();
+    if(state.lastCompletedDate === today) return state; // already recorded today
+    // Check if yesterday was completed (consecutive) to continue streak, else reset to 1
+    const y = new Date(); y.setDate(y.getDate()-1);
+    const yesterday = y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
+    const newStreak = (state.lastCompletedDate === yesterday) ? (state.streak||0)+1 : 1;
+    const next = {lastCompletedDate:today, streak:newStreak, lastDayIndex:dayIndexForToday()};
+    localStorage.setItem(DAILY_KEY, JSON.stringify(next));
+    return next;
+  }catch(e){ return loadDailyState(); }
+}
+
+function hasCompletedTodaysDaily(){
+  const state = loadDailyState();
+  return state.lastCompletedDate === todayDateString();
+}
 let easyMode=localStorage.getItem('lxi_easymode')==='true';
 let darkPitch=localStorage.getItem('lxi_darkpitch')==='true';
 if(darkPitch)document.body.classList.add('dark-pitch');
@@ -1314,7 +1414,7 @@ function renderScore(flash){
   }
 }
 
-function init(puzzle){
+function init(puzzle, isDaily){
   // If no puzzle passed, pick random
   if(!puzzle){
     if(usedIds.length>=PUZZLES.length)usedIds=[];
@@ -1330,6 +1430,7 @@ function init(puzzle){
      initDone:new Set(),
      lettersRevealed:new Map(), // i -> count of letters revealed
      revealedPlayers:new Set(),
+     isDaily:!!isDaily,
      done:false,start:Date.now(),activeIdx:null};
   // Analytics — fires once per puzzle attempt, never blocks gameplay if it fails
   try{
@@ -1945,14 +2046,31 @@ legendary-xi.vercel.app`;
   const qbtn=document.getElementById('quick-save-btn');if(qbtn){qbtn.disabled=false;qbtn.textContent='💾 Save';}
   const qrow=document.getElementById('quick-save-row');if(qrow)qrow.style.display='flex';
   saveStatForPuzzle(String(S.puzzle.id), grade.letter, finalScore, elapsed);
+  // Daily streak — only counts if this was opened via the Daily Lineup entry point
+  let dailyStreakInfo = null;
+  if(S.isDaily){
+    dailyStreakInfo = saveDailyCompletion();
+  }
   // Analytics — fires once per completed lineup, never blocks gameplay if it fails
   try{
     if(window.posthog) posthog.capture('lineup_completed',{
       puzzle_id:S.puzzle.id, team:S.puzzle.team, year:S.puzzle.year,
       competition:S.puzzle.competition, formation:S.puzzle.formation,
-      grade:grade.letter, score:finalScore, time_seconds:elapsed
+      grade:grade.letter, score:finalScore, time_seconds:elapsed,
+      is_daily:!!S.isDaily, streak:dailyStreakInfo?dailyStreakInfo.streak:undefined
     });
   }catch(e){}
+  // Show streak banner on win screen if this was today's daily
+  const streakEl=document.getElementById('win-streak-banner');
+  if(streakEl){
+    if(dailyStreakInfo && dailyStreakInfo.streak>0){
+      const dayNum=dayIndexForToday()+1;
+      streakEl.style.display='block';
+      streakEl.innerHTML=`🔥 <b>${dailyStreakInfo.streak}-day streak!</b> &nbsp;·&nbsp; Daily #${dayNum}`;
+    } else {
+      streakEl.style.display='none';
+    }
+  }
   haptic('win');soundWin();
   document.getElementById('win').classList.add('show');
   }catch(e){
@@ -1993,7 +2111,29 @@ function showPicker(){
   clearInterval(scoreTimer);
   document.getElementById('picker').classList.remove('hidden');
   buildPickerList();
+  renderDailyCard();
 }
+
+function renderDailyCard(){
+  const sub=document.getElementById('daily-card-sub');
+  const streakEl=document.getElementById('daily-card-streak');
+  if(!sub||!streakEl)return;
+  const puzzle=dailyPuzzleForToday();
+  const dayNum=dayIndexForToday()+1;
+  const done=hasCompletedTodaysDaily();
+  const state=loadDailyState();
+  sub.textContent = done
+    ? `Day ${dayNum} complete ✓ — come back tomorrow`
+    : `Day ${dayNum} · ${puzzle.team} ${puzzle.year}`;
+  streakEl.textContent = state.streak>0 ? `🔥 ${state.streak}` : '';
+}
+
+document.getElementById('daily-card').addEventListener('click', ()=>{
+  const puzzle = dailyPuzzleForToday();
+  hidePicker();
+  clearChallengeState();
+  init(puzzle, true);
+});
 
 function hidePicker(){
   document.getElementById('picker').classList.add('hidden');
