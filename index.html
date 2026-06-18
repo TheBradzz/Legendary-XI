@@ -515,8 +515,8 @@ body.dark-pitch .tag{
         <div style="font-family:var(--fh);font-weight:800;font-size:1rem;color:var(--white)">⚽ Daily Lineup</div>
         <div id="daily-card-sub" style="font-size:0.72rem;color:var(--muted);margin-top:2px">Loading…</div>
       </div>
-      <div id="daily-card-streak" style="font-family:var(--fh);font-weight:800;font-size:0.85rem;color:var(--lime);white-space:nowrap"></div>
     </div>
+    <div id="daily-card-streak" style="display:none;font-family:var(--fh);font-weight:800;font-size:0.78rem;color:var(--lime);margin-top:8px;padding-top:8px;border-top:1px solid rgba(181,255,77,0.2)"></div>
   </div>
   <div id="picker-league-banner" style="display:none;margin:6px 12px 0;padding:8px 12px;background:rgba(181,255,77,0.08);border:1px solid rgba(181,255,77,0.2);border-radius:10px;cursor:pointer" onclick="updateGroupTab();openLeaderboard()">
     <div style="display:flex;align-items:center;justify-content:space-between">
@@ -598,7 +598,7 @@ body.dark-pitch .tag{
         <div class="wgrade-label" id="wgrade-label">-</div>
       </div>
       <div class="wsub" id="wsub"></div>
-      <div id="win-streak-banner" style="display:none;text-align:center;font-family:var(--fh);font-size:0.85rem;font-weight:700;color:var(--lime);background:rgba(181,255,77,0.1);border:1px solid rgba(181,255,77,0.3);border-radius:10px;padding:6px 10px;margin:8px 16px 0"></div>
+      <div id="win-streak-banner" style="display:none;text-align:center;font-family:var(--fh);font-size:0.85rem;font-weight:700;color:var(--lime);background:rgba(181,255,77,0.1);border:1px solid rgba(181,255,77,0.3);border-radius:10px;padding:8px 12px;margin:8px 16px 0;line-height:1.4"></div>
       <div class="wscore-block">
         <div class="wscore-num" id="wfinal-score">-</div>
         <div class="wscore-lbl">pts / 1,100</div>
@@ -1053,6 +1053,19 @@ const PUZZLES=[{"id":1,"team":"Leeds United","competition":"Champions League","m
   {"pos":"LWB","name":"Ashley Young","nat":"England","club":"Manchester United"},
   {"pos":"ST","name":"Harry Kane","nat":"England","club":"Tottenham Hotspur"},
   {"pos":"ST","name":"Raheem Sterling","nat":"England","club":"Manchester City"}
+]},
+{"id":50,"team":"Brazil","competition":"International","match":"FIFA World Cup Final vs France (lost 3-0, Paris)","formation":"442","year":1998,"difficulty":3,"players":[
+  {"pos":"GK","name":"Claudio Taffarel","nat":"Brazil","club":"Atletico Mineiro"},
+  {"pos":"RB","name":"Cafu","nat":"Brazil","club":"Roma"},
+  {"pos":"CB","name":"Aldair","nat":"Brazil","club":"Roma"},
+  {"pos":"CB","name":"Junior Baiano","nat":"Brazil","club":"Flamengo"},
+  {"pos":"LB","name":"Roberto Carlos","nat":"Brazil","club":"Real Madrid"},
+  {"pos":"RM","name":"Cesar Sampaio","nat":"Brazil","club":"Palmeiras"},
+  {"pos":"CM","name":"Dunga","nat":"Brazil","club":"Jubilo Iwata"},
+  {"pos":"CM","name":"Rivaldo","nat":"Brazil","club":"Barcelona"},
+  {"pos":"LM","name":"Leonardo","nat":"Brazil","club":"AC Milan"},
+  {"pos":"ST","name":"Ronaldo","nat":"Brazil","club":"Inter Milan"},
+  {"pos":"ST","name":"Bebeto","nat":"Brazil","club":"Deportivo La Coruna"}
 ]}];
 
 const FLAGS={"England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Wales":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","Republic of Ireland":"🇮🇪","France":"🇫🇷","Spain":"🇪🇸","Germany":"🇩🇪","Italy":"🇮🇹","Netherlands":"🇳🇱","Portugal":"🇵🇹","Brazil":"🇧🇷","Argentina":"🇦🇷","Australia":"🇦🇺","Norway":"🇳🇴","Sweden":"🇸🇪","Denmark":"🇩🇰","Finland":"🇫🇮","Poland":"🇵🇱","Belgium":"🇧🇪","Ivory Coast":"🇨🇮","Cameroon":"🇨🇲","Mali":"🇲🇱","Ghana":"🇬🇭","Algeria":"🇩🇿","Nigeria":"🇳🇬","Japan":"🇯🇵","Czech Republic":"🇨🇿","Jamaica":"🇯🇲","Trinidad and Tobago":"🇹🇹","Austria":"🇦🇹","Morocco":"🇲🇦","Senegal":"🇸🇳","South Korea":"🇰🇷","Croatia":"🇭🇷","Switzerland":"🇨🇭"};
@@ -1209,14 +1222,14 @@ let S={},usedIds=[],scoreTimer=null;
 // ═══════════════════════════════════════════════════════════
 const DAILY_START_DATE = '2026-06-18'; // day 1 of the daily rotation
 const DAILY_QUEUE = [
-  49, // England 2018 vs Croatia WC semi — today's launch puzzle
-  3,  // England 2022 vs France WC QF
-  16, // France 1998 WC Final
-  17, // Germany 2014 WC Final
-  29, // Brazil (WC era squad)
-  41, // Le Tournoi 1997
-  40, // England 5-1 Germany
-  39, // England Euro 2000
+  49, // Day 1: England 2018 vs Croatia WC semi — launch puzzle
+  3,  // Day 2: England 2022 vs France WC QF
+  16, // Day 3: France 1998 WC Final vs Brazil  ─┐ same match,
+  50, // Day 4: Brazil 1998 WC Final vs France   ─┘ back-to-back
+  17, // Day 5: Germany 2014 WC Final vs Argentina
+  41, // Day 6: Le Tournoi 1997
+  40, // Day 7: England 5-1 Germany
+  39, // Day 8: England Euro 2000
   // After this, falls back to looping ALL puzzles by id so the
   // queue never runs dry — see dailyPuzzleForToday() below.
 ];
@@ -2065,8 +2078,9 @@ legendary-xi.vercel.app`;
   if(streakEl){
     if(dailyStreakInfo && dailyStreakInfo.streak>0){
       const dayNum=dayIndexForToday()+1;
+      const dayWord = dailyStreakInfo.streak===1 ? 'day' : 'days';
       streakEl.style.display='block';
-      streakEl.innerHTML=`🔥 <b>${dailyStreakInfo.streak}-day streak!</b> &nbsp;·&nbsp; Daily #${dayNum}`;
+      streakEl.innerHTML=`🔥 <b>${dailyStreakInfo.streak}-${dayWord} streak!</b> Daily #${dayNum} done — come back tomorrow to keep it going`;
     } else {
       streakEl.style.display='none';
     }
@@ -2125,7 +2139,15 @@ function renderDailyCard(){
   sub.textContent = done
     ? `Day ${dayNum} complete ✓ — come back tomorrow`
     : `Day ${dayNum} · ${puzzle.team} ${puzzle.year}`;
-  streakEl.textContent = state.streak>0 ? `🔥 ${state.streak}` : '';
+  if(state.streak>0){
+    const dayWord = state.streak===1 ? 'day' : 'days';
+    streakEl.style.display='block';
+    streakEl.innerHTML = done
+      ? `🔥 You're on a ${state.streak}-${dayWord} streak — nice work!`
+      : `🔥 ${state.streak}-${dayWord} streak — <span style="color:#ff9f5a">play today to keep it going!</span>`;
+  } else {
+    streakEl.style.display='none';
+  }
 }
 
 document.getElementById('daily-card').addEventListener('click', ()=>{
