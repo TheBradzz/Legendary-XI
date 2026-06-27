@@ -457,6 +457,10 @@ body.dark-pitch .tag{
 #picker-lb-btn:active{background:rgba(255,180,0,0.22)}
 #picker-share{background:rgba(255,255,255,0.08);color:var(--white);border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:8px 12px;font-family:var(--fh);font-weight:700;font-size:0.82rem;height:36px;display:flex;align-items:center;cursor:pointer}
 #picker-share:active{background:rgba(255,255,255,0.16)}
+#picker-filter-row{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch}
+#picker-filter-row::-webkit-scrollbar{display:none}
+.filter-chip{flex-shrink:0;display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:var(--muted);font-family:var(--fh);font-weight:700;font-size:0.74rem;cursor:pointer;white-space:nowrap}
+.filter-chip.active{background:rgba(181,255,77,0.18);border-color:rgba(181,255,77,0.5);color:var(--lime)}
 #picker-scroll{flex:1;overflow-y:auto;padding:10px 12px 20px;min-height:200px}
 .picker-group{margin-bottom:18px}
 .picker-group-title{font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:2px;display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -536,6 +540,7 @@ body.dark-pitch .tag{
     </div>
   </div>
   <div id="picker-stats-bar" style="display:none;padding:6px 14px 8px;font-size:0.72rem;border-bottom:1px solid rgba(255,255,255,0.05);gap:14px;align-items:center"></div>
+  <div id="picker-filter-row"></div>
   <div id="picker-scroll"></div>
 </div>
 <div id="help-modal">
@@ -1154,6 +1159,136 @@ const PUZZLES=[{"id":1,"team":"Leeds United","competition":"Champions League","m
   {"pos":"LM","name":"Ryan Giggs","nat":"Wales","club":"Manchester United"},
   {"pos":"ST","name":"Teddy Sheringham","nat":"England","club":"Manchester United"},
   {"pos":"ST","name":"Dwight Yorke","nat":"Trinidad and Tobago","club":"Manchester United"}
+]},
+{"id":55,"team":"AC Milan","competition":"Champions League","match":"UEFA Champions League Final vs Liverpool (won 2-1, revenge for 2005)","formation":"433","year":2007,"difficulty":3,"players":[
+  {"pos":"GK","name":"Dida","nat":"Brazil","club":"AC Milan"},
+  {"pos":"RB","name":"Massimo Oddo","nat":"Italy","club":"AC Milan"},
+  {"pos":"CB","name":"Alessandro Nesta","nat":"Italy","club":"AC Milan"},
+  {"pos":"CB","name":"Paolo Maldini","nat":"Italy","club":"AC Milan"},
+  {"pos":"LB","name":"Marek Jankulovski","nat":"Czech Republic","club":"AC Milan"},
+  {"pos":"CM","name":"Andrea Pirlo","nat":"Italy","club":"AC Milan"},
+  {"pos":"CM","name":"Gennaro Gattuso","nat":"Italy","club":"AC Milan"},
+  {"pos":"CM","name":"Massimo Ambrosini","nat":"Italy","club":"AC Milan"},
+  {"pos":"RW","name":"Clarence Seedorf","nat":"Netherlands","club":"AC Milan"},
+  {"pos":"ST","name":"Filippo Inzaghi","nat":"Italy","club":"AC Milan"},
+  {"pos":"LW","name":"Kaka","nat":"Brazil","club":"AC Milan"}
+]},
+{"id":56,"team":"Borussia Dortmund","competition":"Bundesliga","match":"Title-deciding Klassiker vs Bayern Munich (won 1-0, Lewandowski 89th min)","formation":"4231","year":2012,"difficulty":3,"players":[
+  {"pos":"GK","name":"Roman Weidenfeller","nat":"Germany","club":"Borussia Dortmund"},
+  {"pos":"RB","name":"Lukasz Piszczek","nat":"Poland","club":"Borussia Dortmund"},
+  {"pos":"CB","name":"Neven Subotic","nat":"Serbia","club":"Borussia Dortmund"},
+  {"pos":"CB","name":"Mats Hummels","nat":"Germany","club":"Borussia Dortmund"},
+  {"pos":"LB","name":"Marcel Schmelzer","nat":"Germany","club":"Borussia Dortmund"},
+  {"pos":"DM","name":"Sebastian Kehl","nat":"Germany","club":"Borussia Dortmund"},
+  {"pos":"DM","name":"Ilkay Gundogan","nat":"Germany","club":"Borussia Dortmund"},
+  {"pos":"RW","name":"Jakub Blaszczykowski","nat":"Poland","club":"Borussia Dortmund"},
+  {"pos":"AM","name":"Shinji Kagawa","nat":"Japan","club":"Borussia Dortmund"},
+  {"pos":"LW","name":"Kevin Grosskreutz","nat":"Germany","club":"Borussia Dortmund"},
+  {"pos":"ST","name":"Robert Lewandowski","nat":"Poland","club":"Borussia Dortmund"}
+]},
+{"id":57,"team":"Bayern Munich","competition":"Bundesliga","match":"Bundesliga Title-Winning Treble Season (most used XI, 2012-13)","formation":"4231","year":2013,"difficulty":2,"players":[
+  {"pos":"GK","name":"Manuel Neuer","nat":"Germany","club":"Bayern Munich"},
+  {"pos":"RB","name":"Philipp Lahm","nat":"Germany","club":"Bayern Munich"},
+  {"pos":"CB","name":"Dante","nat":"Brazil","club":"Bayern Munich"},
+  {"pos":"CB","name":"Jerome Boateng","nat":"Germany","club":"Bayern Munich"},
+  {"pos":"LB","name":"David Alaba","nat":"Austria","club":"Bayern Munich"},
+  {"pos":"DM","name":"Bastian Schweinsteiger","nat":"Germany","club":"Bayern Munich"},
+  {"pos":"DM","name":"Javi Martinez","nat":"Spain","club":"Bayern Munich"},
+  {"pos":"RW","name":"Thomas Muller","nat":"Germany","club":"Bayern Munich"},
+  {"pos":"AM","name":"Toni Kroos","nat":"Germany","club":"Bayern Munich"},
+  {"pos":"LW","name":"Franck Ribery","nat":"France","club":"Bayern Munich"},
+  {"pos":"ST","name":"Mario Mandzukic","nat":"Croatia","club":"Bayern Munich"}
+]},
+{"id":58,"team":"Paris Saint-Germain","competition":"Ligue 1","match":"Ligue 1 Title-Winning Season with the Neymar-Mbappe-Cavani Front Three (2017-18)","formation":"433","year":2018,"difficulty":2,"players":[
+  {"pos":"GK","name":"Alphonse Areola","nat":"France","club":"Paris Saint-Germain"},
+  {"pos":"RB","name":"Dani Alves","nat":"Brazil","club":"Paris Saint-Germain"},
+  {"pos":"CB","name":"Thiago Silva","nat":"Brazil","club":"Paris Saint-Germain"},
+  {"pos":"CB","name":"Marquinhos","nat":"Brazil","club":"Paris Saint-Germain"},
+  {"pos":"LB","name":"Layvin Kurzawa","nat":"France","club":"Paris Saint-Germain"},
+  {"pos":"CM","name":"Marco Verratti","nat":"Italy","club":"Paris Saint-Germain"},
+  {"pos":"CM","name":"Adrien Rabiot","nat":"France","club":"Paris Saint-Germain"},
+  {"pos":"CM","name":"Angel Di Maria","nat":"Argentina","club":"Paris Saint-Germain"},
+  {"pos":"RW","name":"Kylian Mbappe","nat":"France","club":"Paris Saint-Germain"},
+  {"pos":"ST","name":"Edinson Cavani","nat":"Uruguay","club":"Paris Saint-Germain"},
+  {"pos":"LW","name":"Neymar","nat":"Brazil","club":"Paris Saint-Germain"}
+]},
+{"id":59,"team":"Lille","competition":"Ligue 1","match":"Shock Ligue 1 Title Win, Pipping PSG to the Title (2020-21)","formation":"442","year":2021,"difficulty":4,"players":[
+  {"pos":"GK","name":"Mike Maignan","nat":"France","club":"Lille"},
+  {"pos":"RB","name":"Zeki Celik","nat":"Turkey","club":"Lille"},
+  {"pos":"CB","name":"Jose Fonte","nat":"Portugal","club":"Lille"},
+  {"pos":"CB","name":"Sven Botman","nat":"Netherlands","club":"Lille"},
+  {"pos":"LB","name":"Reinildo Mandava","nat":"Mozambique","club":"Lille"},
+  {"pos":"RM","name":"Jonathan Ikone","nat":"France","club":"Lille"},
+  {"pos":"CM","name":"Benjamin Andre","nat":"France","club":"Lille"},
+  {"pos":"CM","name":"Boubakary Soumare","nat":"France","club":"Lille"},
+  {"pos":"LM","name":"Jonathan Bamba","nat":"Ivory Coast","club":"Lille"},
+  {"pos":"ST","name":"Jonathan David","nat":"Canada","club":"Lille"},
+  {"pos":"ST","name":"Burak Yilmaz","nat":"Turkey","club":"Lille"}
+]},
+{"id":60,"team":"Monaco","competition":"Champions League","match":"Champions League Round of 16 vs Manchester City (won 3-1, Mbappe and Falcao both scored)","formation":"442","year":2017,"difficulty":3,"players":[
+  {"pos":"GK","name":"Danijel Subasic","nat":"Croatia","club":"Monaco"},
+  {"pos":"RB","name":"Andrea Raggi","nat":"Italy","club":"Monaco"},
+  {"pos":"CB","name":"Kamil Glik","nat":"Poland","club":"Monaco"},
+  {"pos":"CB","name":"Djibril Sidibe","nat":"France","club":"Monaco"},
+  {"pos":"LB","name":"Benjamin Mendy","nat":"France","club":"Monaco"},
+  {"pos":"RM","name":"Fabinho","nat":"Brazil","club":"Monaco"},
+  {"pos":"CM","name":"Bernardo Silva","nat":"Portugal","club":"Monaco"},
+  {"pos":"CM","name":"Tiemoue Bakayoko","nat":"France","club":"Monaco"},
+  {"pos":"LM","name":"Thomas Lemar","nat":"France","club":"Monaco"},
+  {"pos":"ST","name":"Radamel Falcao","nat":"Colombia","club":"Monaco"},
+  {"pos":"ST","name":"Kylian Mbappe","nat":"France","club":"Monaco"}
+]},
+{"id":61,"team":"Ajax","competition":"Champions League","match":"Champions League Semi Final 2nd Leg vs Tottenham (lost 2-3 on away goals, Lucas Moura injury-time winner)","formation":"4231","year":2019,"difficulty":3,"players":[
+  {"pos":"GK","name":"Andre Onana","nat":"Cameroon","club":"Ajax"},
+  {"pos":"RB","name":"Noussair Mazraoui","nat":"Morocco","club":"Ajax"},
+  {"pos":"CB","name":"Matthijs de Ligt","nat":"Netherlands","club":"Ajax"},
+  {"pos":"CB","name":"Daley Blind","nat":"Netherlands","club":"Ajax"},
+  {"pos":"LB","name":"Nicolas Tagliafico","nat":"Argentina","club":"Ajax"},
+  {"pos":"DM","name":"Frenkie de Jong","nat":"Netherlands","club":"Ajax"},
+  {"pos":"DM","name":"Lasse Schone","nat":"Denmark","club":"Ajax"},
+  {"pos":"RW","name":"Hakim Ziyech","nat":"Morocco","club":"Ajax"},
+  {"pos":"AM","name":"Donny van de Beek","nat":"Netherlands","club":"Ajax"},
+  {"pos":"LW","name":"Dusan Tadic","nat":"Serbia","club":"Ajax"},
+  {"pos":"ST","name":"Kasper Dolberg","nat":"Denmark","club":"Ajax"}
+]},
+{"id":62,"team":"Netherlands","competition":"International","match":"FIFA World Cup Final vs Spain (lost 0-1 AET, Iniesta winner)","formation":"4231","year":2010,"difficulty":2,"players":[
+  {"pos":"GK","name":"Maarten Stekelenburg","nat":"Netherlands","club":"AS Roma"},
+  {"pos":"RB","name":"Gregory van der Wiel","nat":"Netherlands","club":"Ajax"},
+  {"pos":"CB","name":"John Heitinga","nat":"Netherlands","club":"Everton"},
+  {"pos":"CB","name":"Joris Mathijsen","nat":"Netherlands","club":"AZ"},
+  {"pos":"LB","name":"Giovanni van Bronckhorst","nat":"Netherlands","club":"Feyenoord"},
+  {"pos":"DM","name":"Mark van Bommel","nat":"Netherlands","club":"Bayern Munich"},
+  {"pos":"DM","name":"Nigel de Jong","nat":"Netherlands","club":"Manchester City"},
+  {"pos":"RW","name":"Arjen Robben","nat":"Netherlands","club":"Bayern Munich"},
+  {"pos":"AM","name":"Wesley Sneijder","nat":"Netherlands","club":"Inter Milan"},
+  {"pos":"LW","name":"Dirk Kuyt","nat":"Netherlands","club":"Liverpool"},
+  {"pos":"ST","name":"Robin van Persie","nat":"Netherlands","club":"Arsenal"}
+]},
+{"id":63,"team":"Portugal","competition":"International","match":"UEFA Euro 2016 Final vs France (won 1-0 AET, Ronaldo injured early, Eder winner)","formation":"4141","year":2016,"difficulty":3,"players":[
+  {"pos":"GK","name":"Rui Patricio","nat":"Portugal","club":"Sporting CP"},
+  {"pos":"RB","name":"Cedric Soares","nat":"Portugal","club":"Southampton"},
+  {"pos":"CB","name":"Pepe","nat":"Portugal","club":"Besiktas"},
+  {"pos":"CB","name":"Jose Fonte","nat":"Portugal","club":"Southampton"},
+  {"pos":"LB","name":"Raphael Guerreiro","nat":"Portugal","club":"Lorient"},
+  {"pos":"DM","name":"William Carvalho","nat":"Portugal","club":"Sporting CP"},
+  {"pos":"RM","name":"Joao Mario","nat":"Portugal","club":"Sporting CP"},
+  {"pos":"CM","name":"Renato Sanches","nat":"Portugal","club":"Benfica"},
+  {"pos":"LM","name":"Nani","nat":"Portugal","club":"Valencia"},
+  {"pos":"AM","name":"Andre Silva","nat":"Portugal","club":"Porto"},
+  {"pos":"ST","name":"Cristiano Ronaldo","nat":"Portugal","club":"Real Madrid"}
+]},
+{"id":64,"team":"Argentina","competition":"International","match":"FIFA World Cup Final vs France (won 4-2 on penalties, Messi's crowning moment)","formation":"4231","year":2022,"difficulty":1,"players":[
+  {"pos":"GK","name":"Emiliano Martinez","nat":"Argentina","club":"Aston Villa"},
+  {"pos":"RB","name":"Nahuel Molina","nat":"Argentina","club":"Atletico Madrid"},
+  {"pos":"CB","name":"Cristian Romero","nat":"Argentina","club":"Tottenham"},
+  {"pos":"CB","name":"Nicolas Otamendi","nat":"Argentina","club":"Benfica"},
+  {"pos":"LB","name":"Nicolas Tagliafico","nat":"Argentina","club":"Lyon"},
+  {"pos":"DM","name":"Rodrigo De Paul","nat":"Argentina","club":"Atletico Madrid"},
+  {"pos":"DM","name":"Enzo Fernandez","nat":"Argentina","club":"Benfica"},
+  {"pos":"RW","name":"Angel Di Maria","nat":"Argentina","club":"Juventus"},
+  {"pos":"AM","name":"Alexis Mac Allister","nat":"Argentina","club":"Brighton"},
+  {"pos":"LW","name":"Julian Alvarez","nat":"Argentina","club":"Manchester City"},
+  {"pos":"ST","name":"Lionel Messi","nat":"Argentina","club":"Paris Saint-Germain"}
 ]}];
 
 const FLAGS={"England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Wales":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","Republic of Ireland":"🇮🇪","France":"🇫🇷","Spain":"🇪🇸","Germany":"🇩🇪","Italy":"🇮🇹","Netherlands":"🇳🇱","Portugal":"🇵🇹","Brazil":"🇧🇷","Argentina":"🇦🇷","Australia":"🇦🇺","Norway":"🇳🇴","Sweden":"🇸🇪","Denmark":"🇩🇰","Finland":"🇫🇮","Poland":"🇵🇱","Belgium":"🇧🇪","Ivory Coast":"🇨🇮","Cameroon":"🇨🇲","Mali":"🇲🇱","Ghana":"🇬🇭","Algeria":"🇩🇿","Nigeria":"🇳🇬","Japan":"🇯🇵","Czech Republic":"🇨🇿","Jamaica":"🇯🇲","Trinidad and Tobago":"🇹🇹","Austria":"🇦🇹","Morocco":"🇲🇦","Senegal":"🇸🇳","South Korea":"🇰🇷","Croatia":"🇭🇷","Switzerland":"🇨🇭"};
@@ -1319,6 +1454,19 @@ const DAILY_QUEUE = [
   41, // Day 6: Le Tournoi 1997
   40, // Day 7: England 5-1 Germany
   39, // Day 8: England Euro 2000
+  // Extended 26 Jun — World Cup 2026 heads into knockouts, ride it further
+  24, // Day 9: England 1998 WC R16 vs Argentina (Beckham red card)
+  29, // Day 10: Brazil 2002 WC Final vs Germany (Ronaldo brace)
+  25, // Day 11: England 2002 WC QF vs Brazil (Ronaldinho lob)
+  27, // Day 12: Italy 2006 WC Final vs France (Zidane headbutt)
+  // Easing into Euros once WC knockouts settle
+  5,  // Day 13: England Euro 1996 semi vs Germany
+  33, // Day 14: France Euro 2000 Final vs Italy (Golden Goal)
+  18, // Day 15: Spain Euro 2008 Final vs Germany
+  26, // Day 16: England Euro 2004 QF vs Portugal (penalty shootout)
+  2,  // Day 17: England Euro 2020 Final vs Italy
+  28, // Day 18: Italy Euro 2020 Final vs England at Wembley (same match, other side)
+  4,  // Day 19: England Euro 2024 Final vs Spain
   // After this, falls back to looping ALL puzzles by id so the
   // queue never runs dry — see dailyPuzzleForToday() below.
 ];
@@ -2233,9 +2381,10 @@ document.getElementById('share-card-btn').addEventListener('click',generateShare
 // ── PUZZLE PICKER ──
 const COMP_ICONS = {
   'Champions League':'⭐','Premier League':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','International':'🌍',
-  'La Liga':'🇪🇸','First Division':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Championship':'🏴󠁧󠁢󠁥󠁮󠁧󠁿'
+  'La Liga':'🇪🇸','First Division':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Championship':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'Bundesliga':'🇩🇪','Ligue 1':'🇫🇷'
 };
-const COMP_ORDER = ['International','Champions League','Premier League','First Division','Championship','League One','League Cup','La Liga'];
+const COMP_ORDER = ['International','Champions League','Premier League','La Liga','Bundesliga','Ligue 1','First Division','Championship','League One','League Cup'];
 
 function showPicker(){
   clearInterval(scoreTimer);
@@ -2279,6 +2428,40 @@ document.getElementById('daily-card').addEventListener('click', ()=>{
 
 function hidePicker(){
   document.getElementById('picker').classList.add('hidden');
+}
+
+let activeCompFilter = null;   // non-null = list is actually filtered down to just this competition
+let highlightedChip = null;    // non-null = this chip is visually highlighted (may or may not be filtering yet)
+
+function renderFilterChips(orderedComps){
+  const row = document.getElementById('picker-filter-row');
+  if(!row) return;
+  row.innerHTML = orderedComps.map(comp => {
+    const isActive = highlightedChip === comp;
+    return `<div class="filter-chip${isActive?' active':''}" data-comp="${comp.replace(/"/g,'&quot;')}">${COMP_ICONS[comp]||'🏆'} ${comp}</div>`;
+  }).join('');
+  row.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const comp = chip.dataset.comp;
+      if(highlightedChip === comp && activeCompFilter === comp){
+        // Already filtered to this one — tap again clears everything back to normal
+        activeCompFilter = null;
+        highlightedChip = null;
+        buildPickerList();
+      } else if(highlightedChip === comp){
+        // Already highlighted/jumped-to but not filtering yet — second tap now filters
+        activeCompFilter = comp;
+        buildPickerList();
+      } else {
+        // First tap on this chip (whether or not a different one was highlighted) — just jump, don't filter
+        highlightedChip = comp;
+        activeCompFilter = null; // make sure any previous filter is cleared since we're just jumping now
+        renderFilterChips(orderedComps);
+        const target = document.getElementById('picker-group-'+comp.replace(/[^a-zA-Z0-9]/g,''));
+        if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+      }
+    });
+  });
 }
 
 function buildPickerList(){
@@ -2352,10 +2535,15 @@ function buildPickerList(){
   const ordered = [...COMP_ORDER.filter(c => groups.has(c)),
                    ...[...groups.keys()].filter(c => !COMP_ORDER.includes(c))];
 
+  renderFilterChips(ordered);
+
   ordered.forEach(comp => {
+    // If a filter is active, skip every group except the selected one
+    if(activeCompFilter !== null && activeCompFilter !== comp) return;
     const puzzles = groups.get(comp).slice().sort((a,b) => a.year - b.year);
     const grp = document.createElement('div');
     grp.className = 'picker-group';
+    grp.id = 'picker-group-'+comp.replace(/[^a-zA-Z0-9]/g,'');
     // Completion count for this group (reuses existing per-puzzle stats — no new storage)
     const stats = loadStats();
     const doneCount = puzzles.filter(p => stats[String(p.id)]).length;
