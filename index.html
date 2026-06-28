@@ -668,6 +668,9 @@ body.dark-pitch .tag{
       <div class="wstats-row"><div class="wstat-pill" id="wt">⏱ -</div></div>
       <div class="wpenalty-row" id="wpenalty-row"></div>
       <div class="wshare" id="wshare-text"></div>
+      <div id="top-grade-share-prompt" style="display:none;text-align:center;margin:10px 0;padding:10px 14px;background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(181,255,77,0.1));border:1px solid rgba(255,215,0,0.35);border-radius:12px;font-family:var(--fh);font-weight:700;font-size:0.85rem;color:#FFD700;cursor:pointer" onclick="document.getElementById('share-card-btn').click()">
+        🏆 That's a top-tier score — tap to share it now
+      </div>
       <!-- Quick save row -->
       <div id="quick-save-row" style="display:flex;gap:8px;margin:8px 0 4px">
         <input id="quick-name-input" type="text" placeholder="Save your score…" maxlength="20"
@@ -676,13 +679,16 @@ body.dark-pitch .tag{
         <button id="quick-save-btn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:var(--white);font-family:var(--fh);font-weight:700;font-size:0.82rem;padding:8px 12px;cursor:pointer;flex-shrink:0">💾 Save</button>
       </div>
       <div id="quick-save-msg" style="font-size:0.68rem;color:var(--muted);text-align:center;min-height:14px;margin-bottom:4px"></div>
+      <div class="wbtns" style="margin-bottom:8px">
+        <button class="wbtn wbtn-play" id="next-random-btn" style="width:100%">⚡ Next Lineup</button>
+      </div>
+      <div class="wbtns" style="margin-bottom:10px">
+        <button class="wbtn" id="again-btn" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:var(--white)">📋 Choose a Lineup</button>
+      </div>
       <div id="challenge-nudge">Think your mates can beat that? 👀</div>
       <button class="wbtn wbtn-challenge" id="challenge-btn" style="width:100%;margin-bottom:8px">⚔️ Challenge Friends</button>
       <button class="wbtn wbtn-card" id="share-card-btn" style="width:100%;margin-bottom:10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:var(--white)">🖼️ Share Results Card</button>
-      <div class="wbtns">
-        <button class="wbtn wbtn-lb" id="view-lb-btn">🏅 Board</button>
-        <button class="wbtn wbtn-play" id="again-btn">▶ More Lineups</button>
-      </div>
+      <button class="wbtn wbtn-lb" id="view-lb-btn" style="width:100%">🏅 Board</button>
     </div>
     <!-- Name entry — appears when Share tapped -->
     <div id="wname-screen" style="display:none">
@@ -2022,6 +2028,26 @@ function renderScore(flash){
   }
 }
 
+// Picks a random unplayed puzzle from the SAME competition as the one just finished,
+// so a "Next Lineup" tap feels like a themed run rather than a random lottery.
+// Falls back to any unplayed puzzle if that competition is exhausted, then to a
+// fully random puzzle (resetting usedIds) only if literally everything's been played.
+function nextPuzzleSameComp(finishedPuzzle){
+  const comp = finishedPuzzle ? finishedPuzzle.competition : null;
+  let pool = PUZZLES.filter(p => !usedIds.includes(p.id) && p.competition===comp);
+  if(pool.length===0){
+    // Same competition exhausted — widen to anything unplayed
+    pool = PUZZLES.filter(p => !usedIds.includes(p.id));
+  }
+  if(pool.length===0){
+    // Everything's been played — reset the used list and try again
+    usedIds=[];
+    pool = PUZZLES.filter(p => p.competition===comp);
+    if(pool.length===0) pool = PUZZLES;
+  }
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
 function init(puzzle, isDaily){
   // If no puzzle passed, pick random
   if(!puzzle){
@@ -2526,6 +2552,24 @@ function showWin(){
   if(glEl){glEl.textContent=grade.letter;glEl.style.color=grade.color;}
   if(glLb){glLb.textContent=grade.label;}
 
+  // Nudge text scales with how good the result is — top grades get a much
+  // more confident, brag-worthy prompt since that's the moment someone is
+  // actually motivated to share, not just be asked a passive question
+  const nudgeEl=document.getElementById('challenge-nudge');
+  if(nudgeEl){
+    if(grade.letter==='S'){
+      nudgeEl.textContent="🔥 That's a near-perfect score. Show it off →";
+    } else if(grade.letter==='A'){
+      nudgeEl.textContent="💪 Strong result. Bet your mates can't top it →";
+    } else if(grade.letter==='B'){
+      nudgeEl.textContent='Solid score — think your mates can beat it? 👀';
+    } else {
+      nudgeEl.textContent='Think your mates would do any better? 👀';
+    }
+  }
+  const topPrompt=document.getElementById('top-grade-share-prompt');
+  if(topPrompt) topPrompt.style.display = (grade.letter==='S'||grade.letter==='A') ? 'block' : 'none';
+
   // Populate card
   S.score=finalScore;
   document.getElementById('wsub').textContent=`${S.puzzle.team} · ${S.puzzle.year} · ${S.puzzle.competition}`;
@@ -2712,6 +2756,18 @@ document.getElementById('reveal-one-btn').addEventListener('click',revealOne);
 // Reveal All removed — players use individual reveal instead
 
 document.getElementById('again-btn').addEventListener('click',()=>{clearChallengeState();showPicker();});
+document.getElementById('next-random-btn').addEventListener('click',()=>{
+  clearChallengeState();
+  const finished = S.puzzle; // the puzzle just completed, before init() overwrites S
+  const next = nextPuzzleSameComp(finished);
+  init(next);
+  try{if(window.posthog) posthog.capture('next_lineup_clicked',{
+    from:'win_screen',
+    previous_competition: finished?finished.competition:null,
+    next_competition: next.competition,
+    stayed_in_competition: finished?next.competition===finished.competition:null
+  });}catch(e){}
+});
 document.getElementById('share-card-btn').addEventListener('click',generateShareCard);
 
 // ── PUZZLE PICKER ──
