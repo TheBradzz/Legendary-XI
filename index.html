@@ -674,8 +674,8 @@ body.dark-pitch .tag{
       <div class="wstats-row"><div class="wstat-pill" id="wt">⏱ -</div></div>
       <div class="wpenalty-row" id="wpenalty-row"></div>
       <div class="wshare" id="wshare-text"></div>
-      <div id="top-grade-share-prompt" style="display:none;text-align:center;margin:10px 0;padding:10px 14px;background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(181,255,77,0.1));border:1px solid rgba(255,215,0,0.35);border-radius:12px;font-family:var(--fh);font-weight:700;font-size:0.85rem;color:#FFD700;cursor:pointer" onclick="document.getElementById('share-card-btn').click()">
-        🏆 That's a top-tier score — tap to share it now
+      <div id="top-grade-share-prompt" style="display:none;text-align:center;margin:10px 0;padding:10px 14px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.18);border-radius:12px;font-family:var(--fh);font-weight:700;font-size:0.85rem;color:var(--white);cursor:pointer" onclick="document.getElementById('share-card-btn').click()">
+        Tap to share your result
       </div>
       <!-- Quick save row -->
       <div id="quick-save-row" style="display:flex;gap:8px;margin:8px 0 4px">
@@ -738,6 +738,11 @@ body.dark-pitch .tag{
 const LEAGUE_KEY='lxi_league_v1';
 function getMyLeague(){try{return JSON.parse(localStorage.getItem(LEAGUE_KEY)||'null');}catch(e){return null;}}
 function setMyLeague(id,name,role){try{localStorage.setItem(LEAGUE_KEY,JSON.stringify({id,name,role}));}catch(e){}}
+
+// ── SAVED PLAYER NAME — lets repeat challenges skip the name-entry screen ──
+const PLAYER_NAME_KEY='lxi_player_name';
+function getSavedPlayerName(){try{return localStorage.getItem(PLAYER_NAME_KEY)||'';}catch(e){return '';}}
+function savePlayerName(name){try{if(name)localStorage.setItem(PLAYER_NAME_KEY,name);}catch(e){}}
 async function createLeague(name,createdBy){
   const id=Math.random().toString(36).slice(2,5).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase();
   try{await sbFetch('/rest/v1/leagues','POST',{id,name,created_by:createdBy});}catch(e){}
@@ -2573,8 +2578,24 @@ function showWin(){
       nudgeEl.textContent='Think your mates would do any better? 👀';
     }
   }
+  // Share prompt is always on now — bad scores are often more shareable
+  // (banter bait) than good ones, so every grade gets a tailored nudge
+  // rather than only S/A getting a prompt at all.
   const topPrompt=document.getElementById('top-grade-share-prompt');
-  if(topPrompt) topPrompt.style.display = (grade.letter==='S'||grade.letter==='A') ? 'block' : 'none';
+  if(topPrompt){
+    const shareCopy={
+      S:"🏆 That's a near-perfect score — tap to rub it in",
+      A:'🏆 Top-tier score — tap to share it now',
+      B:'📤 Solid score — tap to share and see who beats it',
+      C:"😅 Only a C? Tap to send it to a mate who'll do worse",
+      D:'💀 Rough one — tap to share the pain',
+      F:'☠️ Certified disaster — tap to share the shame'
+    };
+    topPrompt.textContent=shareCopy[grade.letter]||shareCopy.B;
+    topPrompt.style.color=grade.color;
+    topPrompt.style.borderColor=grade.color+'59';
+    topPrompt.style.display='block';
+  }
 
   // Populate card
   S.score=finalScore;
@@ -3079,6 +3100,7 @@ function submitScore(){
 
   // Store name immediately
   S.playerName=name;
+  savePlayerName(name);
 
   // Return to results screen
   document.getElementById('wname-screen').style.display='none';
@@ -3633,15 +3655,22 @@ function checkChallengeWin(finalScore,elapsed,challenge){
   return `😬 ${challenge.name} beats you by ${Math.abs(scoreDiff)} pts — ${cT?cT+' vs your '+myT+'.':''} Challenge back?`;
 }
 
-// Challenge — name entry then group trash talk share
+// Challenge — one tap straight to the share sheet once we know the player's
+// name from a previous game; only the very first challenge needs the name screen.
 document.getElementById('challenge-btn').addEventListener('click',()=>{
-  document.getElementById('wresults-screen').style.display='none';
-  document.getElementById('wname-screen').style.display='block';
-  setTimeout(()=>document.getElementById('wname-input').focus(),150);
+  const savedName=getSavedPlayerName();
+  if(savedName){
+    S.playerName=savedName;
+    generateChallenge();
+  } else {
+    document.getElementById('wresults-screen').style.display='none';
+    document.getElementById('wname-screen').style.display='block';
+    setTimeout(()=>document.getElementById('wname-input').focus(),150);
+  }
   try{
     if(window.posthog) posthog.capture('challenge_initiated',{
       puzzle_id:S.puzzle.id, team:S.puzzle.team, year:S.puzzle.year,
-      grade:S.grade||null
+      grade:S.grade||null, one_tap:!!savedName
     });
   }catch(e){}
 });
