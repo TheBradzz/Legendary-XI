@@ -2899,7 +2899,8 @@ async function subscribeToPush(){
     try{if(window.posthog)posthog.capture('push_subscribed');}catch(e){}
   }catch(e){
     console.error('push subscribe error:',e);
-    toast('Could not enable reminders','bad');
+    const detail=(e&&e.message?e.message:String(e)).slice(0,60);
+    toast('Reminders failed: '+detail,'bad');
   }
   updateDailyReminderBtn();
 }
