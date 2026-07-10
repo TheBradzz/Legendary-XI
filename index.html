@@ -550,6 +550,7 @@ body.dark-pitch .tag{
       <span id="daily-card-streak-pill" class="picker-group-count" style="display:none;color:#0a2000;background:var(--lime);border:none;font-size:0.76rem"></span>
     </div>
     <div id="daily-card-streak-msg" style="display:none;font-family:var(--fh);font-weight:700;font-size:0.74rem;color:var(--lime);margin-top:8px;padding-top:8px;border-top:1px solid rgba(181,255,77,0.2)"></div>
+    <button id="daily-reminder-btn" type="button" style="display:none;margin-top:8px;background:none;border:none;color:var(--muted);font-size:0.68rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0">🔔 Remind me tomorrow</button>
   </div>
   <div id="picker-league-banner" style="display:none;margin:0 14px 14px;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;cursor:pointer" onclick="updateGroupTab();openLeaderboard()">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -2839,7 +2840,70 @@ function renderDailyCard(){
     pill.style.display='none';
     msg.style.display='none';
   }
+  updateDailyReminderBtn();
 }
+
+// ── PUSH NOTIFICATIONS — daily reminder opt-in ──
+const VAPID_PUBLIC_KEY='BD_cwrFNWIpJcP_5jThNMnU2M4xnve-utzbBDAY-MSo6l9rZ9qNz3XqFwrlADKbszZcQ6gxl491zzN-J0WXMF_M';
+const PUSH_OPT_KEY='lxi_push_subscribed';
+function pushSupported(){
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const rawData=atob(base64);
+  return Uint8Array.from([...rawData].map(c=>c.charCodeAt(0)));
+}
+function updateDailyReminderBtn(){
+  const btn=document.getElementById('daily-reminder-btn');
+  if(!btn)return;
+  if(!pushSupported() || Notification.permission==='denied'){
+    btn.style.display='none';
+    return;
+  }
+  const subscribed=localStorage.getItem(PUSH_OPT_KEY)==='1' && Notification.permission==='granted';
+  btn.style.display='block';
+  btn.textContent=subscribed?'🔔 Reminders on ✓':'🔔 Remind me tomorrow';
+  btn.style.color=subscribed?'var(--lime)':'var(--muted)';
+  btn.disabled=subscribed;
+  btn.style.cursor=subscribed?'default':'pointer';
+}
+async function subscribeToPush(){
+  if(!pushSupported()){toast('Reminders not supported on this browser','info');return;}
+  try{
+    const reg=await navigator.serviceWorker.register('/sw.js');
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){toast('Notifications blocked','info');updateDailyReminderBtn();return;}
+    let subObj=await reg.pushManager.getSubscription();
+    if(!subObj){
+      subObj=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+    }
+    const j=subObj.toJSON();
+    // Raw fetch (not sbFetch) so we can upsert on `endpoint` — re-subscribing
+    // (e.g. reinstalling the PWA) would otherwise hit the unique constraint.
+    const upsertResp=await fetch(SB_URL+'/rest/v1/push_subscriptions?on_conflict=endpoint',{
+      method:'POST',
+      headers:{
+        'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,
+        'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'
+      },
+      body:JSON.stringify({endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth})
+    });
+    if(!upsertResp.ok)throw new Error(await upsertResp.text());
+    localStorage.setItem(PUSH_OPT_KEY,'1');
+    toast('Reminders on 🔔','ok');
+    try{if(window.posthog)posthog.capture('push_subscribed');}catch(e){}
+  }catch(e){
+    console.error('push subscribe error:',e);
+    toast('Could not enable reminders','bad');
+  }
+  updateDailyReminderBtn();
+}
+document.getElementById('daily-reminder-btn').addEventListener('click',(e)=>{
+  e.stopPropagation();
+  subscribeToPush();
+});
 
 document.getElementById('daily-card').addEventListener('click', ()=>{
   const puzzle = dailyPuzzleForToday();
