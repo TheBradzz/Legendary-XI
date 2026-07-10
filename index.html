@@ -2882,11 +2882,14 @@ async function subscribeToPush(){
     const j=subObj.toJSON();
     // Raw fetch (not sbFetch) so we can upsert on `endpoint` — re-subscribing
     // (e.g. reinstalling the PWA) would otherwise hit the unique constraint.
+    // ignore-duplicates (ON CONFLICT DO NOTHING) rather than merge-duplicates —
+    // the latter needs UPDATE privilege on the table, which anon doesn't have
+    // and shouldn't need; the subscription keys don't change on a re-add anyway.
     const upsertResp=await fetch(SB_URL+'/rest/v1/push_subscriptions?on_conflict=endpoint',{
       method:'POST',
       headers:{
         'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,
-        'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'
+        'Content-Type':'application/json','Prefer':'resolution=ignore-duplicates,return=minimal'
       },
       body:JSON.stringify({endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth})
     });
