@@ -2880,20 +2880,20 @@ async function subscribeToPush(){
       subObj=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
     }
     const j=subObj.toJSON();
-    // Raw fetch (not sbFetch) so we can upsert on `endpoint` — re-subscribing
-    // (e.g. reinstalling the PWA) would otherwise hit the unique constraint.
-    // ignore-duplicates (ON CONFLICT DO NOTHING) rather than merge-duplicates —
-    // the latter needs UPDATE privilege on the table, which anon doesn't have
-    // and shouldn't need; the subscription keys don't change on a re-add anyway.
-    const upsertResp=await fetch(SB_URL+'/rest/v1/push_subscriptions?on_conflict=endpoint',{
+    // Plain insert, no ON CONFLICT — an upsert needs a SELECT RLS policy for
+    // anon to evaluate the conflict check (Postgres requirement), which we
+    // deliberately don't grant (anon shouldn't be able to browse subscription
+    // rows). A re-subscribe just hits the unique constraint as a normal 409,
+    // which we treat as "already subscribed" below.
+    const insertResp=await fetch(SB_URL+'/rest/v1/push_subscriptions',{
       method:'POST',
       headers:{
         'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,
-        'Content-Type':'application/json','Prefer':'resolution=ignore-duplicates,return=minimal'
+        'Content-Type':'application/json','Prefer':'return=minimal'
       },
       body:JSON.stringify({endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth})
     });
-    if(!upsertResp.ok)throw new Error(await upsertResp.text());
+    if(!insertResp.ok && insertResp.status!==409)throw new Error(await insertResp.text());
     localStorage.setItem(PUSH_OPT_KEY,'1');
     toast('Reminders on 🔔','ok');
     try{if(window.posthog)posthog.capture('push_subscribed');}catch(e){}
